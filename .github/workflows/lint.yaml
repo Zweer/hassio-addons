@@ -1,0 +1,70 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Validate addon configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate YAML syntax
+        run: |
+          for f in $(find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v .git); do
+            echo "Checking $f..."
+            python3 -c "import yaml; yaml.safe_load(open('$f'))" || exit 1
+          done
+          echo "✓ All YAML files valid"
+
+      - name: Validate addon config schema
+        run: |
+          for dir in */; do
+            if [ -f "${dir}config.yaml" ]; then
+              echo "Validating ${dir}config.yaml..."
+              python3 -c "
+          import yaml, sys
+          with open('${dir}config.yaml') as f:
+              data = yaml.safe_load(f)
+          required = ['name', 'version', 'slug', 'description', 'arch']
+          missing = [k for k in required if k not in data]
+          if missing:
+              print(f'ERROR: Missing keys: {missing}')
+              sys.exit(1)
+          print(f'  ✓ {data[\"name\"]} v{data[\"version\"]} [{\" \".join(data[\"arch\"])}]')
+          "
+            fi
+          done
+
+      - name: Check required files
+        run: |
+          for dir in */; do
+            if [ -f "${dir}config.yaml" ]; then
+              echo "Checking ${dir}..."
+              [ -f "${dir}Dockerfile" ] && echo "  ✓ Dockerfile" || echo "  ✗ Missing Dockerfile"
+              [ -f "${dir}run.sh" ] && echo "  ✓ run.sh" || echo "  ✗ Missing run.sh"
+              [ -f "${dir}DOCS.md" ] && echo "  ✓ DOCS.md" || echo "  ⚠ Missing DOCS.md (optional)"
+              [ -f "${dir}icon.png" ] && echo "  ✓ icon.png" || echo "  ⚠ Missing icon.png (optional)"
+              [ -f "${dir}logo.png" ] && echo "  ✓ logo.png" || echo "  ⚠ Missing logo.png (optional)"
+            fi
+          done
+
+      - name: Lint shell scripts
+        run: |
+          for f in $(find . -name "*.sh" | grep -v node_modules | grep -v .git); do
+            echo "Checking $f..."
+            bash -n "$f" || exit 1
+          done
+          echo "✓ All shell scripts valid"
+
+      - name: Lint Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: "kirocrew/Dockerfile"
+          failure-threshold: warning
+          ignore: DL3006,DL3008,DL3018,SC2015

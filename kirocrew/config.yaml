@@ -1,0 +1,60 @@
+---
+name: "Kiro Crew"
+version: "0.1.0"
+slug: "kirocrew"
+description: >-
+  Persistent AI development workspace that self-improves and continues
+  beyond one session. Runs agents, scheduled jobs, and long-running tasks
+  on your Home Assistant hardware.
+url: "https://github.com/kirodotdev/KiroCrew"
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+
+# Ingress — exposes the dashboard inside HA without extra ports
+ingress: true
+ingress_port: 5476
+ingress_stream: true
+
+# Sidebar entry
+panel_icon: "mdi:robot-outline"
+panel_title: "Kiro Crew"
+panel_admin: true
+
+# Persistent storage + shared folder for repos
+map:
+  - type: share
+    read_only: false
+  - type: ssl
+    read_only: true
+
+# Watchdog: restart if the gateway stops responding
+watchdog: "http://[HOST]:[PORT:5476]/"
+timeout: 120
+
+# Configurable options
+options:
+  session_pool_size: 1
+  telemetry: false
+  log_level: "info"
+
+schema:
+  session_pool_size: "int(1,4)"
+  telemetry: bool
+  log_level: "list(debug|info|warning|error)"
+
+# Environment variables passed to the container
+environment:
+  KIROCREW_HOME: "/data"
+  KIROCREW_PORT: "5476"
+
+# Backup support
+backup: hot
+backup_exclude:
+  - "*.log"
+  - "models/"
+
+stage: experimental

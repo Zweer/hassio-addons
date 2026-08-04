@@ -1,0 +1,17 @@
+---
+configuration:
+  session_pool_size:
+    name: Session Pool Size
+    description: >-
+      Maximum concurrent agent sessions. Keep at 1 for RPi4 with 4GB RAM.
+      Each session uses ~500MB-1GB. Increase only if you have 8GB+ RAM.
+  telemetry:
+    name: Anonymous Telemetry
+    description: >-
+      Send one anonymous heartbeat per day to Kiro Crew maintainers.
+      No prompts, code, or personal data is ever sent.
+  log_level:
+    name: Log Level
+    description: >-
+      Gateway log verbosity. Use 'debug' for troubleshooting,
+      'info' for normal operation.

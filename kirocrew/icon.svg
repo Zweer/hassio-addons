@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="#1a1a2e"/>
+  <!-- Robot head -->
+  <rect x="38" y="35" width="52" height="45" rx="10" fill="#7c3aed"/>
+  <!-- Eyes -->
+  <circle cx="50" cy="55" r="6" fill="#fff"/>
+  <circle cx="78" cy="55" r="6" fill="#fff"/>
+  <circle cx="50" cy="55" r="3" fill="#1a1a2e"/>
+  <circle cx="78" cy="55" r="3" fill="#1a1a2e"/>
+  <!-- Antenna -->
+  <line x1="64" y1="35" x2="64" y2="22" stroke="#7c3aed" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="64" cy="19" r="4" fill="#a78bfa"/>
+  <!-- Mouth / smile -->
+  <path d="M 50 68 Q 64 78 78 68" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Body hint -->
+  <rect x="48" y="82" width="32" height="18" rx="5" fill="#7c3aed" opacity="0.7"/>
+  <!-- Signal waves (AI/wireless) -->
+  <path d="M 82 28 Q 90 24 88 16" stroke="#a78bfa" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 86 32 Q 96 26 93 15" stroke="#a78bfa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.4"/>
+</svg>
