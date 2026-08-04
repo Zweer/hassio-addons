@@ -1,14 +1,18 @@
-name: Lint
+name: CI
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   lint:
-    name: Validate addon configuration
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -68,3 +72,20 @@ jobs:
           dockerfile: "kirocrew/Dockerfile"
           failure-threshold: warning
           ignore: DL3006,DL3008,DL3018,SC2015
+
+  release-please:
+    name: Release Please
+    needs: lint
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      kirocrew_released: ${{ steps.release.outputs['kirocrew--release_created'] }}
+      kirocrew_version: ${{ steps.release.outputs['kirocrew--version'] }}
+      kirocrew_tag: ${{ steps.release.outputs['kirocrew--tag_name'] }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          manifest-file: ".release-please-manifest.json"
+          config-file: "release-please-config.json"
