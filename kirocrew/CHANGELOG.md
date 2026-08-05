@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.11...kirocrew-v0.1.12) (2026-08-05)
+
+
+### Bug Fixes
+
+* remove KIROCREW_HOME from config.yaml and symlink entire .kiro dir ([9f2dda6](https://github.com/Zweer/hassio-addons/commit/9f2dda603ce8a686db45b3665afae47f1be14178))
+
 ## [0.1.11](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.10...kirocrew-v0.1.11) (2026-08-05)
 
 
