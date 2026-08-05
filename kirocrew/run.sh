@@ -8,12 +8,12 @@ set -euo pipefail
 CONFIG_PATH="/data/options.json"
 
 # ---------------------------------------------------------------------------
-# Parse addon options
+# Parse addon options (using Python — always available in the base image)
 # ---------------------------------------------------------------------------
 if [ -f "$CONFIG_PATH" ]; then
-    POOL_SIZE=$(jq -r '.session_pool_size // 1' "$CONFIG_PATH")
-    TELEMETRY=$(jq -r '.telemetry // false' "$CONFIG_PATH")
-    LOG_LEVEL=$(jq -r '.log_level // "info"' "$CONFIG_PATH")
+    POOL_SIZE=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('session_pool_size', 1))")
+    TELEMETRY=$(python3 -c "import json; print(str(json.load(open('$CONFIG_PATH')).get('telemetry', False)).lower())")
+    LOG_LEVEL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('log_level', 'info'))")
 else
     POOL_SIZE=1
     TELEMETRY=false

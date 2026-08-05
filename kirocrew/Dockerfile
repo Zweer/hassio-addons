@@ -11,17 +11,8 @@ LABEL \
     io.hass.name="Kiro Crew" \
     io.hass.description="Persistent AI development workspace"
 
-# Install jq for parsing HA options.json (bash/curl likely already present)
-RUN if ! command -v jq >/dev/null 2>&1; then \
-        if command -v apk >/dev/null 2>&1; then \
-            apk add --no-cache jq; \
-        elif command -v apt-get >/dev/null 2>&1; then \
-            apt-get update && apt-get install -y --no-install-recommends jq && \
-            rm -rf /var/lib/apt/lists/*; \
-        elif command -v pip >/dev/null 2>&1; then \
-            pip install --no-cache-dir jq; \
-        fi; \
-    fi
+# Base image already includes Python, bash, and kiro-cli
+# No additional packages needed — run.sh uses Python for JSON parsing
 
 # Copy our run script
 COPY run.sh /
