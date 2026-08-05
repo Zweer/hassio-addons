@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.2...kirocrew-v0.1.3) (2026-08-05)
+
+
+### Bug Fixes
+
+* **kirocrew:** document CI/CD in changelog ([e019d31](https://github.com/Zweer/hassio-addons/commit/e019d31069760ffc14e6c3929368fd01810ab6fa))
+
 ## [0.1.2](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.1...kirocrew-v0.1.2) (2026-08-05)
 
 
