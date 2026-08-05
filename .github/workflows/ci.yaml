@@ -135,6 +135,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             version=$(python3 -c "import yaml; print(yaml.safe_load(open('${{ inputs.addon }}/config.yaml'))['version'])")
             addon="${{ inputs.addon }}"
@@ -144,7 +145,8 @@ jobs:
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "addon=${addon}" >> "$GITHUB_OUTPUT"
-          echo "Building ${addon} v${version} for ${{ matrix.arch }}"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          echo "Building ${addon} v${version} for ${{ matrix.arch }} (owner: ${owner})"
 
       - name: Login to GHCR
         uses: docker/login-action@v4
@@ -175,8 +177,8 @@ jobs:
           platforms: ${{ steps.platform.outputs.platform }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:latest
+            ${{ env.REGISTRY }}/${{ steps.version.outputs.owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ steps.version.outputs.owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:latest
           build-args: |
             BUILD_VERSION=${{ steps.version.outputs.version }}
             BUILD_ARCH=${{ matrix.arch }}
@@ -208,7 +210,8 @@ jobs:
         run: |
           addon="kirocrew"
           version="${{ needs.release-please.outputs.kirocrew_version }}"
-          image="${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/{arch}-${addon}"
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-${addon}"
 
           yq -i ".version = \"${version}\"" "${addon}/config.yaml"
           yq -i ".image = \"${image}\"" "${addon}/config.yaml"
