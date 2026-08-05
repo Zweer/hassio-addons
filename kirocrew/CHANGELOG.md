@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.12...kirocrew-v0.1.13) (2026-08-05)
+
+
+### Features
+
+* auto-discover external URL from Supervisor API for ingress ([a5c9cdb](https://github.com/Zweer/hassio-addons/commit/a5c9cdb1ae15646593e1e3b89789d14e18dcf4a1))
+
 ## [0.1.12](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.11...kirocrew-v0.1.12) (2026-08-05)
 
 
