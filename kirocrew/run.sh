@@ -52,6 +52,8 @@ fi
 ln -sfn /data/.kiro /root/.kiro 2>/dev/null || true
 mkdir -p /data/.kiro
 export HOME="/data"
+# Set CWD to persistent storage (original WORKDIR may have been removed)
+cd /data
 
 # Disable telemetry if user opted out
 if [ "$TELEMETRY" = "false" ]; then
