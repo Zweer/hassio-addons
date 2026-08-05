@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.5...kirocrew-v0.1.6) (2026-08-05)
+
+
+### Bug Fixes
+
+* move USER root before RUN to fix apt-get permission denied during ([d0a9c03](https://github.com/Zweer/hassio-addons/commit/d0a9c031bd69c5d47e364827790ccb1fb1a1737a))
+
 ## [0.1.5](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.4...kirocrew-v0.1.5) (2026-08-05)
 
 
