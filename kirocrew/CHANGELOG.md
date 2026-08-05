@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.11](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.10...kirocrew-v0.1.11) (2026-08-05)
+
+
+### Bug Fixes
+
+* cd /data after symlink to avoid stale CWD error ([4212a73](https://github.com/Zweer/hassio-addons/commit/4212a73a6583a2f7fd3d02d4b1bb7c370ea32c2c))
+* rewrite persistence strategy - symlink data dirs instead of ([8b875af](https://github.com/Zweer/hassio-addons/commit/8b875af93ccde9037cb201b2fac2205cff3db11a))
+
 ## [0.1.10](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.9...kirocrew-v0.1.10) (2026-08-05)
 
 
