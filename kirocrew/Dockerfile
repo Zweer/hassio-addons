@@ -11,13 +11,16 @@ LABEL \
     io.hass.name="Kiro Crew" \
     io.hass.description="Persistent AI development workspace"
 
-# Install bashio for HA integration
-RUN if command -v apk >/dev/null 2>&1; then \
-        apk add --no-cache bash curl jq; \
-    elif command -v apt-get >/dev/null 2>&1; then \
-        apt-get update && apt-get install -y --no-install-recommends \
-            bash curl jq && \
-        rm -rf /var/lib/apt/lists/*; \
+# Install jq for parsing HA options.json (bash/curl likely already present)
+RUN if ! command -v jq >/dev/null 2>&1; then \
+        if command -v apk >/dev/null 2>&1; then \
+            apk add --no-cache jq; \
+        elif command -v apt-get >/dev/null 2>&1; then \
+            apt-get update && apt-get install -y --no-install-recommends jq && \
+            rm -rf /var/lib/apt/lists/*; \
+        elif command -v pip >/dev/null 2>&1; then \
+            pip install --no-cache-dir jq; \
+        fi; \
     fi
 
 # Copy our run script
