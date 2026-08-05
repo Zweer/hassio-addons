@@ -32,7 +32,6 @@ schema:
   telemetry: bool
   log_level: list(debug|info|warning|error)
 environment:
-  KIROCREW_HOME: /data
   KIROCREW_PORT: '5476'
 backup: hot
 backup_exclude:

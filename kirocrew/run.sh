@@ -33,32 +33,32 @@ fi
 # We keep that structure but make it point to /data so state survives restarts.
 # ---------------------------------------------------------------------------
 CREW_HOME="/home/kirocrew"
-CREW_DATA="${CREW_HOME}/.kiro/crew"
-KIRO_CLI_DATA="${CREW_HOME}/.kiro"
 
-# Ensure /data directories exist
-mkdir -p /data/crew
-mkdir -p /data/kiro-cli
-
-# Symlink ~/.kiro/crew -> /data/crew (Crew state: config, memory, sessions)
-mkdir -p "${CREW_HOME}/.kiro"
-if [ ! -L "${CREW_DATA}" ]; then
-    # First run: move any existing data from the image to /data
-    if [ -d "${CREW_DATA}" ]; then
-        cp -a "${CREW_DATA}/." /data/crew/ 2>/dev/null || true
-        rm -rf "${CREW_DATA}"
+# ---------------------------------------------------------------------------
+# Persistence: symlink the entire .kiro directory to /data
+#
+# The upstream image stores everything under /home/kirocrew/.kiro/:
+#   - .kiro/crew/         → Crew state (config, memory, sessions, skills)
+#   - .kiro/credentials.json, state.json → kiro-cli auth
+#   - .kiro/agents/, settings/, crew-auth-staging/ → various state
+#
+# Instead of symlinking individual files, we persist the entire .kiro/ dir.
+# ---------------------------------------------------------------------------
+if [ ! -d "/data/dot-kiro" ]; then
+    mkdir -p /data/dot-kiro
+    # First run: seed from the image's defaults
+    if [ -d "${CREW_HOME}/.kiro" ]; then
+        cp -a "${CREW_HOME}/.kiro/." /data/dot-kiro/ 2>/dev/null || true
     fi
-    ln -sfn /data/crew "${CREW_DATA}"
 fi
+# Replace .kiro with symlink to persistent storage
+rm -rf "${CREW_HOME}/.kiro"
+ln -sfn /data/dot-kiro "${CREW_HOME}/.kiro"
 
-# Symlink kiro-cli credentials -> /data/kiro-cli
-# kiro-cli stores auth tokens in ~/.kiro/ (files like credentials.json, state.json)
-for f in credentials.json state.json; do
-    if [ -f "${KIRO_CLI_DATA}/${f}" ] && [ ! -L "${KIRO_CLI_DATA}/${f}" ]; then
-        cp -a "${KIRO_CLI_DATA}/${f}" "/data/kiro-cli/${f}" 2>/dev/null || true
-    fi
-    ln -sfn "/data/kiro-cli/${f}" "${KIRO_CLI_DATA}/${f}"
-done
+# Ensure crew subdirectory exists
+mkdir -p /data/dot-kiro/crew
+
+CREW_DATA="${CREW_HOME}/.kiro/crew"
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -77,8 +77,7 @@ fi
 # ---------------------------------------------------------------------------
 # Write Kiro Crew config
 # ---------------------------------------------------------------------------
-mkdir -p /data/crew
-cat > /data/crew/config.json <<EOF
+cat > "${CREW_DATA}/config.json" <<EOF
 {
   "agent": {
     "provider": "acp",
