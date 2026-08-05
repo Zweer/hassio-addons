@@ -75,9 +75,19 @@ if [ "$TELEMETRY" = "false" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Write Kiro Crew config
+# Write Kiro Crew config (only on first run — preserve user changes)
 # ---------------------------------------------------------------------------
-cat > "${CREW_DATA}/config.json" <<EOF
+if [ ! -f "${CREW_DATA}/config.json" ]; then
+    # Discover HA external URL from Supervisor API for ingress host validation
+    EXTERNAL_URL=""
+    if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+        EXTERNAL_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+            http://supervisor/core/api/config 2>/dev/null \
+            | python3 -c "import json,sys; c=json.load(sys.stdin); print(c.get('external_url',''))" 2>/dev/null) || true
+    fi
+    echo "[kirocrew-addon] External URL: ${EXTERNAL_URL:-not configured in HA}"
+
+    cat > "${CREW_DATA}/config.json" <<EOF
 {
   "agent": {
     "provider": "acp",
@@ -92,10 +102,12 @@ cat > "${CREW_DATA}/config.json" <<EOF
     "bot_name": "Kiro Crew",
     "host": "0.0.0.0",
     "port": ${KIROCREW_PORT},
+    "url": "${EXTERNAL_URL}",
     "open_browser": false
   }
 }
 EOF
+fi
 
 echo "[kirocrew-addon] Configuration:"
 echo "  KIROCREW_HOME=$KIROCREW_HOME"
@@ -105,6 +117,27 @@ echo "  Pool size: $POOL_SIZE"
 echo "  Telemetry: $TELEMETRY"
 echo "  Log level: $LOG_LEVEL"
 echo "  Sandbox: off (container-level isolation is sufficient)"
+
+# ---------------------------------------------------------------------------
+# Ensure dashboard.url is always up-to-date (HA external URL may change)
+# ---------------------------------------------------------------------------
+if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    CURRENT_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/core/api/config 2>/dev/null \
+        | python3 -c "import json,sys; c=json.load(sys.stdin); print(c.get('external_url',''))" 2>/dev/null) || true
+    if [ -n "${CURRENT_URL}" ]; then
+        python3 -c "
+import json
+f='${CREW_DATA}/config.json'
+try:
+    cfg=json.load(open(f))
+except: cfg={}
+cfg.setdefault('dashboard',{})['url']='${CURRENT_URL}'
+json.dump(cfg,open(f,'w'),indent=2)
+"
+        echo "[kirocrew-addon] dashboard.url set to: ${CURRENT_URL}"
+    fi
+fi
 
 # ---------------------------------------------------------------------------
 # Start

@@ -16,6 +16,7 @@ ingress_stream: true
 panel_icon: mdi:robot-outline
 panel_title: Kiro Crew
 panel_admin: true
+hassio_api: true
 map:
   - type: share
     read_only: false
