@@ -23,9 +23,20 @@ multi-session work — all accessible from the HA sidebar via ingress.
 ## First-run setup
 
 1. Install the addon and start it.
-2. Open "Kiro Crew" from the HA sidebar.
-3. Complete the Kiro device-code sign-in when prompted (links your Kiro account).
-4. (Optional) Connect Discord/Telegram for mobile access.
+2. Wait for the gateway to start (first boot may take 1-2 minutes).
+3. **Login to Kiro CLI** — this is required before agents can work.
+   From the SSH/Terminal addon, run:
+   ```bash
+   docker exec -it $(docker ps --filter "label=io.hass.name=Kiro Crew" -q) kiro-cli login
+   ```
+   This will display a device code and a URL. Open the URL in your browser,
+   enter the code, and authenticate with your Kiro account.
+4. Restart the addon after login.
+5. Open "Kiro Crew" from the HA sidebar — the dashboard should load.
+6. (Optional) Connect Discord/Telegram for mobile access.
+
+> **Note:** Login credentials are stored in `/data` and persist across
+> restarts and updates. You only need to do this once.
 
 ## Configuration
 
@@ -68,12 +79,22 @@ This data is included in HA backups.
 
 Clone your repos into `/share/repos/` (accessible via the HA Share folder):
 
-```
+```bash
 # From the SSH addon terminal
 cd /share
 mkdir -p repos
 cd repos
 git clone https://github.com/you/your-repo.git
+```
+
+For private repos, use a GitHub Personal Access Token:
+```bash
+git clone https://<YOUR_PAT>@github.com/you/private-repo.git
+```
+
+The `gh` CLI is also included in the image. To authenticate it:
+```bash
+docker exec -it $(docker ps --filter "label=io.hass.name=Kiro Crew" -q) gh auth login --with-token <<< "YOUR_PAT"
 ```
 
 Then tell Kiro Crew to work on `/share/repos/your-repo` from the dashboard.
@@ -87,6 +108,22 @@ For Discord/Telegram integration, configure it inside the Kiro Crew
 dashboard — these connect outbound, no inbound ports required.
 
 ## Troubleshooting
+
+### "kiro-cli is not logged in"
+
+You need to authenticate after first install. See [First-run setup](#first-run-setup).
+
+### Warnings at startup (normal)
+
+These warnings are expected and harmless:
+
+- **`cgroup v2 scope enforcement unavailable`** — `systemd-run` isn't available
+  inside a container. HA Supervisor provides isolation at the container level.
+- **`MCP probe failed: timeout`** — Internal MCP services take a moment to
+  start. They retry automatically.
+- **`Vendored llama-cpp-python failed to import`** — The embedding model
+  requires native libraries not available on all architectures. Crew falls
+  back to keyword search until embeddings are available.
 
 ### Addon won't start
 
@@ -106,6 +143,13 @@ RPi4 4GB is tight. If OOM-killed:
 1. Set `session_pool_size` to 1
 2. Stop other heavy addons (MariaDB, etc.) when using Crew intensively
 3. Reduce HA recorder history
+
+### Force update after a new release
+
+If HA doesn't show a new version after a release, from the SSH addon:
+```bash
+ha store refresh
+```
 
 ## Links
 
