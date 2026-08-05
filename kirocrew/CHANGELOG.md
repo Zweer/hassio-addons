@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.6...kirocrew-v0.1.7) (2026-08-05)
+
+
+### Bug Fixes
+
+* use env vars instead of unsupported CLI flags for kirocrew gateway ([f671db4](https://github.com/Zweer/hassio-addons/commit/f671db40f6d8cf6aa1bc926c67c4e6c687ee8ce2))
+
 ## [0.1.6](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.5...kirocrew-v0.1.6) (2026-08-05)
 
 
