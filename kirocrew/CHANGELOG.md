@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.9...kirocrew-v0.1.10) (2026-08-05)
+
+
+### Bug Fixes
+
+* symlink /home/kirocrew to /data for full state persistence ([bd70df1](https://github.com/Zweer/hassio-addons/commit/bd70df16dd288fb4d7e382bbee4924043a6ac048))
+
 ## [0.1.9](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.8...kirocrew-v0.1.9) (2026-08-05)
 
 
