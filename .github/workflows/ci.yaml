@@ -107,7 +107,7 @@ jobs:
       kirocrew_version: ${{ steps.release.outputs['kirocrew--version'] }}
       kirocrew_tag: ${{ steps.release.outputs['kirocrew--tag_name'] }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           manifest-file: ".release-please-manifest.json"
