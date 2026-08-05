@@ -74,6 +74,7 @@ echo "  Sandbox: off (container-level isolation is sufficient)"
 # Start the Kiro Crew Gateway
 # ---------------------------------------------------------------------------
 echo "[kirocrew-addon] Starting Kiro Crew Gateway..."
+echo "[kirocrew-addon] Dashboard will be available via HA ingress"
 
 exec kirocrew gateway \
     --port "$KIROCREW_PORT" \
