@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.4](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.3...kirocrew-v0.1.4) (2026-08-05)
+
+
+### Bug Fixes
+
+* **kirocrew:** make jq install robust, skip if already present in base image ([22db688](https://github.com/Zweer/hassio-addons/commit/22db688a290a0863c086d8e54242547c7718e97b))
+* **kirocrew:** replace jq with python3 for JSON parsing ([cdbcd8f](https://github.com/Zweer/hassio-addons/commit/cdbcd8fe2e697d439c25a3b29bd53e7c06c2d290))
+* **kirocrew:** use COPY --chmod to avoid permission issues in base image ([2df852c](https://github.com/Zweer/hassio-addons/commit/2df852c8563f509e163813f090d6f0144e93f4bc))
+
 ## [0.1.3](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.2...kirocrew-v0.1.3) (2026-08-05)
 
 
