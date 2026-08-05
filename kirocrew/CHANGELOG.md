@@ -22,3 +22,4 @@
 - Configurable session pool size, telemetry, and log level
 - Persistent data in /data with HA backup support
 - Watchdog for automatic restart on gateway failure
+- CI/CD with release-please and Docker multi-arch builds
