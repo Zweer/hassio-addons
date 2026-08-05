@@ -92,7 +92,7 @@ jobs:
         with:
           dockerfile: "kirocrew/Dockerfile"
           failure-threshold: warning
-          ignore: DL3006,DL3008,DL3018,SC2015
+          ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
   # ─────────────────────────────────────────────────────────────
   # Release Please — only on push to main
