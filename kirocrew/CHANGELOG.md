@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.8...kirocrew-v0.1.9) (2026-08-05)
+
+
+### Bug Fixes
+
+* set KIROCREW_CORS_ORIGINS for ingress and fix config.json path ([7de126c](https://github.com/Zweer/hassio-addons/commit/7de126c127799366f07a1ac5ae9259cb9a4b8dc2))
+
 ## [0.1.8](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.7...kirocrew-v0.1.8) (2026-08-05)
 
 
