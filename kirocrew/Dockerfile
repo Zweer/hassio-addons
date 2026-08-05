@@ -11,8 +11,7 @@ LABEL \
     io.hass.name="Kiro Crew" \
     io.hass.description="Persistent AI development workspace"
 
-# Base image already includes Python, bash, and kiro-cli
-# HA Supervisor manages container-level isolation; run as root inside
+# HA addons run as root (Supervisor provides container-level isolation)
 USER root
 
 # Install gh CLI for GitHub operations (PR creation, issue management, etc.)
@@ -20,10 +19,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy our run script (with exec permission set at copy time)
+# Copy our entrypoint
 COPY --chmod=755 run.sh /run.sh
 
-# Persistent data lives in /data (HA convention)
+# HA maps /data as persistent storage
 VOLUME ["/data"]
 
 ENTRYPOINT []

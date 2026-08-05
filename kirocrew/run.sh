@@ -3,21 +3,18 @@ set -euo pipefail
 
 # =============================================================================
 # Kiro Crew — Home Assistant Addon Entrypoint
+#
+# Strategy: Don't fight the upstream image. It expects /home/kirocrew as its
+# working directory. We set KIROCREW_HOME to point there, and use /data only
+# as the HA-persistent volume. On startup, we symlink the relevant persistent
+# subdirectories FROM /home/kirocrew INTO /data, so Crew writes to /data
+# through its normal paths.
 # =============================================================================
 
 CONFIG_PATH="/data/options.json"
 
 # ---------------------------------------------------------------------------
-# Fix permissions: Supervisor mounts options.json as root, but the base image
-# may run as a non-root user. Ensure readability.
-# ---------------------------------------------------------------------------
-if [ -f "$CONFIG_PATH" ] && [ ! -r "$CONFIG_PATH" ]; then
-    echo "[kirocrew-addon] Fixing permissions on $CONFIG_PATH..."
-    chmod 644 "$CONFIG_PATH" 2>/dev/null || true
-fi
-
-# ---------------------------------------------------------------------------
-# Parse addon options (using Python — always available in the base image)
+# Parse addon options
 # ---------------------------------------------------------------------------
 if [ -f "$CONFIG_PATH" ]; then
     POOL_SIZE=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('session_pool_size', 1))")
@@ -30,50 +27,58 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Environment setup
+# Persistence: symlink Crew's data dirs into /data (HA persistent volume)
+#
+# The upstream image stores everything under /home/kirocrew/.kiro/crew/.
+# We keep that structure but make it point to /data so state survives restarts.
 # ---------------------------------------------------------------------------
-export KIROCREW_HOME="${KIROCREW_HOME:-/data}"
-export KIROCREW_PORT="${KIROCREW_PORT:-5476}"
+CREW_HOME="/home/kirocrew"
+CREW_DATA="${CREW_HOME}/.kiro/crew"
+KIRO_CLI_DATA="${CREW_HOME}/.kiro"
 
-# Persist kiro-cli credentials across container restarts.
-# The upstream image's user home is /home/kirocrew. kiro-cli and kirocrew
-# both store credentials and state there. We symlink it to /data so
-# everything persists across container restarts.
-# Also set HOME=/data so any root-context lookups go to persistent storage.
-if [ ! -L "/home/kirocrew" ]; then
-    # Move any existing data from the image's home to /data
-    if [ -d "/home/kirocrew" ]; then
-        cp -a /home/kirocrew/. /data/ 2>/dev/null || true
-        rm -rf /home/kirocrew
+# Ensure /data directories exist
+mkdir -p /data/crew
+mkdir -p /data/kiro-cli
+
+# Symlink ~/.kiro/crew -> /data/crew (Crew state: config, memory, sessions)
+mkdir -p "${CREW_HOME}/.kiro"
+if [ ! -L "${CREW_DATA}" ]; then
+    # First run: move any existing data from the image to /data
+    if [ -d "${CREW_DATA}" ]; then
+        cp -a "${CREW_DATA}/." /data/crew/ 2>/dev/null || true
+        rm -rf "${CREW_DATA}"
     fi
-    ln -sfn /data /home/kirocrew
+    ln -sfn /data/crew "${CREW_DATA}"
 fi
-# Ensure root's home also points to /data for kiro-cli invoked as root
-ln -sfn /data/.kiro /root/.kiro 2>/dev/null || true
-mkdir -p /data/.kiro
-export HOME="/data"
-# Set CWD to persistent storage (original WORKDIR may have been removed)
-cd /data
 
-# Disable telemetry if user opted out
+# Symlink kiro-cli credentials -> /data/kiro-cli
+# kiro-cli stores auth tokens in ~/.kiro/ (files like credentials.json, state.json)
+for f in credentials.json state.json; do
+    if [ -f "${KIRO_CLI_DATA}/${f}" ] && [ ! -L "${KIRO_CLI_DATA}/${f}" ]; then
+        cp -a "${KIRO_CLI_DATA}/${f}" "/data/kiro-cli/${f}" 2>/dev/null || true
+    fi
+    ln -sfn "/data/kiro-cli/${f}" "${KIRO_CLI_DATA}/${f}"
+done
+
+# ---------------------------------------------------------------------------
+# Environment
+# ---------------------------------------------------------------------------
+export KIROCREW_HOME="${CREW_DATA}"
+export KIROCREW_PORT="${KIROCREW_PORT:-5476}"
+export KIROCREW_BIND="0.0.0.0"
+export KIRO_LOG_LEVEL="$LOG_LEVEL"
+export KIROCREW_CORS_ORIGINS="*"
+export HOME="${CREW_HOME}"
+
 if [ "$TELEMETRY" = "false" ]; then
     export KIROCREW_TELEMETRY_DISABLED=1
 fi
 
 # ---------------------------------------------------------------------------
-# First-run initialization
+# Write Kiro Crew config
 # ---------------------------------------------------------------------------
-if [ ! -d "$KIROCREW_HOME/config" ]; then
-    echo "[kirocrew-addon] First run detected. Initializing data directory..."
-    mkdir -p "$KIROCREW_HOME/config"
-    mkdir -p "$KIROCREW_HOME/sessions"
-    mkdir -p "$KIROCREW_HOME/models"
-fi
-
-# Write/update Kiro Crew config
-mkdir -p /data/.kiro/crew
-CONFIG_FILE="/data/.kiro/crew/config.json"
-cat > "$CONFIG_FILE" <<EOF
+mkdir -p /data/crew
+cat > /data/crew/config.json <<EOF
 {
   "agent": {
     "provider": "acp",
@@ -88,7 +93,6 @@ cat > "$CONFIG_FILE" <<EOF
     "bot_name": "Kiro Crew",
     "host": "0.0.0.0",
     "port": ${KIROCREW_PORT},
-    "allowed_hosts": ["*"],
     "open_browser": false
   }
 }
@@ -97,22 +101,17 @@ EOF
 echo "[kirocrew-addon] Configuration:"
 echo "  KIROCREW_HOME=$KIROCREW_HOME"
 echo "  KIROCREW_PORT=$KIROCREW_PORT"
+echo "  HOME=$HOME"
 echo "  Pool size: $POOL_SIZE"
 echo "  Telemetry: $TELEMETRY"
 echo "  Log level: $LOG_LEVEL"
 echo "  Sandbox: off (container-level isolation is sufficient)"
 
 # ---------------------------------------------------------------------------
-# Start the Kiro Crew Gateway
+# Start
 # ---------------------------------------------------------------------------
 echo "[kirocrew-addon] Starting Kiro Crew Gateway..."
 echo "[kirocrew-addon] Dashboard will be available via HA ingress"
 
-# Configuration is via env vars and config.json (no CLI flags for gateway)
-export KIROCREW_BIND="0.0.0.0"
-export KIRO_LOG_LEVEL="$LOG_LEVEL"
-# Allow any Host/Origin header — HA ingress proxies requests through its own
-# authenticated endpoint, so the dashboard's host check is redundant here.
-export KIROCREW_CORS_ORIGINS="*"
-
+cd "${CREW_HOME}"
 exec kirocrew gateway
