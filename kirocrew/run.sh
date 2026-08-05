@@ -35,6 +35,14 @@ fi
 export KIROCREW_HOME="${KIROCREW_HOME:-/data}"
 export KIROCREW_PORT="${KIROCREW_PORT:-5476}"
 
+# Persist kiro-cli credentials across container restarts.
+# kiro-cli uses ~/.kiro/ which is volatile in containers.
+# Symlink it to /data/.kiro so credentials survive restarts.
+if [ ! -d "/data/.kiro" ]; then
+    mkdir -p /data/.kiro
+fi
+ln -sfn /data/.kiro /root/.kiro
+
 # Disable telemetry if user opted out
 if [ "$TELEMETRY" = "false" ]; then
     export KIROCREW_TELEMETRY_DISABLED=1
@@ -66,7 +74,9 @@ cat > "$CONFIG_FILE" <<EOF
   "dashboard": {
     "bot_name": "Kiro Crew",
     "host": "0.0.0.0",
-    "port": ${KIROCREW_PORT}
+    "port": ${KIROCREW_PORT},
+    "allowed_hosts": ["*"],
+    "open_browser": false
   }
 }
 EOF
