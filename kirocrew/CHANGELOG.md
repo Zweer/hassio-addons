@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.7...kirocrew-v0.1.8) (2026-08-05)
+
+
+### Bug Fixes
+
+* persist kiro-cli credentials and allow all hosts for HA ingress ([eae0eba](https://github.com/Zweer/hassio-addons/commit/eae0eba576d54b07c4c5230a95007f8fd2398a52))
+
 ## [0.1.7](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.6...kirocrew-v0.1.7) (2026-08-05)
 
 
