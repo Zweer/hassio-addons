@@ -36,12 +36,22 @@ export KIROCREW_HOME="${KIROCREW_HOME:-/data}"
 export KIROCREW_PORT="${KIROCREW_PORT:-5476}"
 
 # Persist kiro-cli credentials across container restarts.
-# kiro-cli uses ~/.kiro/ which is volatile in containers.
-# Symlink it to /data/.kiro so credentials survive restarts.
-if [ ! -d "/data/.kiro" ]; then
-    mkdir -p /data/.kiro
+# The upstream image's user home is /home/kirocrew. kiro-cli and kirocrew
+# both store credentials and state there. We symlink it to /data so
+# everything persists across container restarts.
+# Also set HOME=/data so any root-context lookups go to persistent storage.
+if [ ! -L "/home/kirocrew" ]; then
+    # Move any existing data from the image's home to /data
+    if [ -d "/home/kirocrew" ]; then
+        cp -a /home/kirocrew/. /data/ 2>/dev/null || true
+        rm -rf /home/kirocrew
+    fi
+    ln -sfn /data /home/kirocrew
 fi
-ln -sfn /data/.kiro /root/.kiro
+# Ensure root's home also points to /data for kiro-cli invoked as root
+ln -sfn /data/.kiro /root/.kiro 2>/dev/null || true
+mkdir -p /data/.kiro
+export HOME="/data"
 
 # Disable telemetry if user opted out
 if [ "$TELEMETRY" = "false" ]; then
@@ -58,8 +68,9 @@ if [ ! -d "$KIROCREW_HOME/config" ]; then
     mkdir -p "$KIROCREW_HOME/models"
 fi
 
-# Write/update Kiro Crew config optimized for RPi4 4GB
-CONFIG_FILE="$KIROCREW_HOME/config.json"
+# Write/update Kiro Crew config
+mkdir -p /data/.kiro/crew
+CONFIG_FILE="/data/.kiro/crew/config.json"
 cat > "$CONFIG_FILE" <<EOF
 {
   "agent": {
