@@ -29,10 +29,11 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Lint — always runs
+  # Lint — only on PRs (gate before merge)
   # ─────────────────────────────────────────────────────────────
   lint:
     name: Lint
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -98,7 +99,6 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   release-please:
     name: Release Please
-    needs: lint
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
