@@ -120,8 +120,10 @@ jobs:
     name: Build ${{ matrix.arch }}
     needs: release-please
     if: |
-      needs.release-please.outputs.kirocrew_released == 'true' ||
-      (github.event_name == 'workflow_dispatch' && inputs.force_build)
+      always() && (
+        needs.release-please.outputs.kirocrew_released == 'true' ||
+        (github.event_name == 'workflow_dispatch' && inputs.force_build)
+      )
     runs-on: ubuntu-latest
     strategy:
       matrix:
