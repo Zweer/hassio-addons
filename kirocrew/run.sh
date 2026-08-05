@@ -59,7 +59,7 @@ if [ ! -d "$KIROCREW_HOME/config" ]; then
 fi
 
 # Write/update Kiro Crew config optimized for RPi4 4GB
-CONFIG_FILE="$KIROCREW_HOME/config/config.json"
+CONFIG_FILE="$KIROCREW_HOME/config.json"
 cat > "$CONFIG_FILE" <<EOF
 {
   "agent": {
@@ -98,5 +98,8 @@ echo "[kirocrew-addon] Dashboard will be available via HA ingress"
 # Configuration is via env vars and config.json (no CLI flags for gateway)
 export KIROCREW_BIND="0.0.0.0"
 export KIRO_LOG_LEVEL="$LOG_LEVEL"
+# Allow any Host/Origin header — HA ingress proxies requests through its own
+# authenticated endpoint, so the dashboard's host check is redundant here.
+export KIROCREW_CORS_ORIGINS="*"
 
 exec kirocrew gateway
