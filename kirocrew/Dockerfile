@@ -14,9 +14,8 @@ LABEL \
 # Base image already includes Python, bash, and kiro-cli
 # No additional packages needed — run.sh uses Python for JSON parsing
 
-# Copy our run script
-COPY run.sh /
-RUN chmod a+x /run.sh
+# Copy our run script (with exec permission set at copy time)
+COPY --chmod=755 run.sh /run.sh
 
 # Persistent data lives in /data (HA convention)
 VOLUME ["/data"]
