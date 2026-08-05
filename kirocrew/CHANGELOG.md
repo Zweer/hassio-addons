@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.4...kirocrew-v0.1.5) (2026-08-05)
+
+
+### Features
+
+* add gh CLI to Dockerfile for GitHub operations ([980d000](https://github.com/Zweer/hassio-addons/commit/980d000b713e229dbf37f78eee60417a5e7feae4))
+
+
+### Bug Fixes
+
+* run as root to resolve /data/options.json permission denied ([22414f5](https://github.com/Zweer/hassio-addons/commit/22414f553bda10115d297f7c5ab5a777849c729d))
+
 ## [0.1.4](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.3...kirocrew-v0.1.4) (2026-08-05)
 
 
