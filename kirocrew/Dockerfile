@@ -20,6 +20,9 @@ RUN apt-get update \
 # Copy our run script (with exec permission set at copy time)
 COPY --chmod=755 run.sh /run.sh
 
+# HA Supervisor manages container-level isolation; run as root inside
+USER root
+
 # Persistent data lives in /data (HA convention)
 VOLUME ["/data"]
 

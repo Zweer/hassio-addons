@@ -8,6 +8,15 @@ set -euo pipefail
 CONFIG_PATH="/data/options.json"
 
 # ---------------------------------------------------------------------------
+# Fix permissions: Supervisor mounts options.json as root, but the base image
+# may run as a non-root user. Ensure readability.
+# ---------------------------------------------------------------------------
+if [ -f "$CONFIG_PATH" ] && [ ! -r "$CONFIG_PATH" ]; then
+    echo "[kirocrew-addon] Fixing permissions on $CONFIG_PATH..."
+    chmod 644 "$CONFIG_PATH" 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
 # Parse addon options (using Python — always available in the base image)
 # ---------------------------------------------------------------------------
 if [ -f "$CONFIG_PATH" ]; then
