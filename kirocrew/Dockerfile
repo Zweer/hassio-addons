@@ -12,7 +12,10 @@ LABEL \
     io.hass.description="Persistent AI development workspace"
 
 # Base image already includes Python, bash, and kiro-cli
-# No additional packages needed — run.sh uses Python for JSON parsing
+# Install gh CLI for GitHub operations (PR creation, issue management, etc.)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy our run script (with exec permission set at copy time)
 COPY --chmod=755 run.sh /run.sh
