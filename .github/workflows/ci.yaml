@@ -5,12 +5,32 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      addon:
+        description: "Addon to build"
+        required: true
+        default: "kirocrew"
+        type: choice
+        options:
+          - kirocrew
+      force_build:
+        description: "Force build even without a release"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   pull-requests: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Lint — always runs
+  # ─────────────────────────────────────────────────────────────
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -73,6 +93,9 @@ jobs:
           failure-threshold: warning
           ignore: DL3006,DL3008,DL3018,SC2015
 
+  # ─────────────────────────────────────────────────────────────
+  # Release Please — only on push to main
+  # ─────────────────────────────────────────────────────────────
   release-please:
     name: Release Please
     needs: lint
@@ -89,3 +112,116 @@ jobs:
         with:
           manifest-file: ".release-please-manifest.json"
           config-file: "release-please-config.json"
+
+  # ─────────────────────────────────────────────────────────────
+  # Build — after release-please creates a release, or on manual dispatch
+  # ─────────────────────────────────────────────────────────────
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: release-please
+    if: |
+      needs.release-please.outputs.kirocrew_released == 'true' ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_build)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - aarch64
+          - amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version=$(python3 -c "import yaml; print(yaml.safe_load(open('${{ inputs.addon }}/config.yaml'))['version'])")
+            addon="${{ inputs.addon }}"
+          else
+            version="${{ needs.release-please.outputs.kirocrew_version }}"
+            addon="kirocrew"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "addon=${addon}" >> "$GITHUB_OUTPUT"
+          echo "Building ${addon} v${version} for ${{ matrix.arch }}"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Map arch to Docker platform
+        id: platform
+        run: |
+          case "${{ matrix.arch }}" in
+            aarch64) echo "platform=linux/arm64" >> "$GITHUB_OUTPUT" ;;
+            amd64)   echo "platform=linux/amd64" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ steps.version.outputs.addon }}
+          file: ${{ steps.version.outputs.addon }}/Dockerfile
+          platforms: ${{ steps.platform.outputs.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:latest
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_ARCH=${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Kiro Crew HA Addon
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  # ─────────────────────────────────────────────────────────────
+  # Update config.yaml with image reference after build
+  # ─────────────────────────────────────────────────────────────
+  update-config:
+    name: Update config with image
+    needs: [release-please, build]
+    if: needs.release-please.outputs.kirocrew_released == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Install yq
+        uses: mikefarah/yq@master
+
+      - name: Update config.yaml
+        run: |
+          addon="kirocrew"
+          version="${{ needs.release-please.outputs.kirocrew_version }}"
+          image="${{ env.REGISTRY }}/${{ github.repository_owner }}/hassio-addons/{arch}-${addon}"
+
+          yq -i ".version = \"${version}\"" "${addon}/config.yaml"
+          yq -i ".image = \"${image}\"" "${addon}/config.yaml"
+
+          echo "Updated ${addon}/config.yaml:"
+          cat "${addon}/config.yaml"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "kirocrew/config.yaml"
+          git diff --cached --quiet || {
+            git commit -m "ci: update kirocrew image to v${{ needs.release-please.outputs.kirocrew_version }} [skip ci]"
+            git push
+          }
