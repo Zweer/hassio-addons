@@ -30,9 +30,9 @@ configuration:
   telegram_allowed_user_ids:
     name: ID Utenti Telegram Autorizzati
     description: >-
-      Lista di ID numerici Telegram autorizzati a chattare con il bot.
-      Ottieni il tuo ID scrivendo a @userinfobot su Telegram. Solo questi
-      utenti riceveranno risposte; tutti gli altri vengono ignorati.
+      Lista di ID numerici Telegram separati da virgola autorizzati a
+      chattare con il bot (es. 123456789,987654321). Ottieni il tuo ID
+      scrivendo a @userinfobot su Telegram.
   discord_bot_token:
     name: Token Bot Discord
     description: >-
@@ -41,9 +41,10 @@ configuration:
   discord_allowed_user_ids:
     name: ID Utenti Discord Autorizzati
     description: >-
-      Lista di ID utente Discord autorizzati a chattare con il bot.
-      Abilita la Modalità Sviluppatore nelle impostazioni Discord, poi
-      clicca destro sul tuo profilo → Copia ID Utente.
+      Lista di ID utente Discord separati da virgola autorizzati a
+      chattare con il bot. Abilita la Modalità Sviluppatore nelle
+      impostazioni Discord, poi clicca destro sul tuo profilo → Copia
+      ID Utente.
   slack_bot_token:
     name: Token Bot Slack
     description: >-

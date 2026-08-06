@@ -30,9 +30,9 @@ configuration:
   telegram_allowed_user_ids:
     name: Telegram Allowed User IDs
     description: >-
-      List of numeric Telegram user IDs allowed to chat with the bot.
-      Get your ID by messaging @userinfobot on Telegram. Only these
-      users will receive replies; all others are silently dropped.
+      Comma-separated list of numeric Telegram user IDs allowed to chat
+      with the bot (e.g. 123456789,987654321). Get your ID by messaging
+      @userinfobot on Telegram.
   discord_bot_token:
     name: Discord Bot Token
     description: >-
@@ -41,9 +41,10 @@ configuration:
   discord_allowed_user_ids:
     name: Discord Allowed User IDs
     description: >-
-      List of Discord user IDs allowed to chat with the bot.
-      Enable Developer Mode in Discord settings, then right-click
-      your profile → Copy User ID.
+      Comma-separated list of Discord user IDs allowed to chat with
+      the bot (e.g. 123456789012345678,987654321098765432). Enable
+      Developer Mode in Discord settings, then right-click your
+      profile → Copy User ID.
   slack_bot_token:
     name: Slack Bot Token
     description: >-
