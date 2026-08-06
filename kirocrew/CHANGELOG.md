@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.0...kirocrew-v0.2.1) (2026-08-06)
+
+
+### Features
+
+* add kiro_api_key, auto-generate dashboard token, fix HOME env ([827f74e](https://github.com/Zweer/hassio-addons/commit/827f74ec3331012e96a6d06f66c983d3784bb533))
+
 ## [0.2.0](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.15...kirocrew-v0.2.0) (2026-08-06)
 
 
