@@ -29,17 +29,17 @@ options:
   telemetry: false
   log_level: info
 schema:
-  session_pool_size: int(1,4)
+  session_pool_size: "int(1,4)"
   telemetry: bool
-  log_level: list(debug|info|warning|error)
-  external_url: url?
-  telegram_bot_token: password?
-  telegram_allowed_user_ids: [int]?
-  discord_bot_token: password?
-  discord_allowed_user_ids: [str]?
-  slack_bot_token: password?
-  slack_app_token: password?
-  slack_owner_id: str?
+  log_level: "list(debug|info|warning|error)"
+  external_url: "url?"
+  telegram_bot_token: "password?"
+  telegram_allowed_user_ids: "[int]?"
+  discord_bot_token: "password?"
+  discord_allowed_user_ids: "[str]?"
+  slack_bot_token: "password?"
+  slack_app_token: "password?"
+  slack_owner_id: "str?"
 environment: {}
 backup: hot
 backup_exclude:
