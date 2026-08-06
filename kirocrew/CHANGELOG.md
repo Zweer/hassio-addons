@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.1...kirocrew-v0.2.2) (2026-08-06)
+
+
+### Bug Fixes
+
+* simplify HOME handling and remove kiro_api_key option ([2b602a4](https://github.com/Zweer/hassio-addons/commit/2b602a4b4101a1d5f9efb6a9f22d96bc0869fa27))
+
 ## [0.2.1](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.0...kirocrew-v0.2.1) (2026-08-06)
 
 
