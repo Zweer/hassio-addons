@@ -14,13 +14,15 @@ LABEL \
 # HA addons run as root (Supervisor provides container-level isolation)
 USER root
 
-# Install nginx (ingress path rewrite) and gh CLI (GitHub operations)
+# Install cloudflared (tunnel) and gh CLI (GitHub operations)
+ARG BUILD_ARCH=amd64
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx gh \
+    && apt-get install -y --no-install-recommends gh curl \
+    && ARCH=$([ "${BUILD_ARCH}" = "aarch64" ] && echo "arm64" || echo "amd64") \
+    && curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" \
+       -o /usr/local/bin/cloudflared \
+    && chmod +x /usr/local/bin/cloudflared \
     && rm -rf /var/lib/apt/lists/*
-
-# Nginx config for ingress proxy
-COPY nginx.conf /etc/nginx/sites-enabled/default
 
 # Copy our entrypoint
 COPY --chmod=755 run.sh /run.sh

@@ -15,3 +15,9 @@ configuration:
     description: >-
       Verbosità dei log del gateway. Usa 'debug' per troubleshooting,
       'info' per operazione normale.
+  cloudflare_tunnel_token:
+    name: Token Cloudflare Tunnel
+    description: >-
+      Token da Cloudflare Zero Trust per esporre la dashboard esternamente
+      senza aprire porte. Crea un tunnel su dash.cloudflare.com →
+      Zero Trust → Networks → Tunnels. Lascia vuoto per disabilitare.
