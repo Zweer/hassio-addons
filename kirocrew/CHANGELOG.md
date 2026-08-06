@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.3...kirocrew-v0.2.4) (2026-08-06)
+
+
+### Features
+
+* add Discord and Slack channel integration options ([27ae9dd](https://github.com/Zweer/hassio-addons/commit/27ae9dd77649f3fa701640f3918e46ebd7ec9b60))
+
 ## [0.2.3](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.2...kirocrew-v0.2.3) (2026-08-06)
 
 
