@@ -116,31 +116,10 @@ echo "  Sandbox: off (container-level isolation is sufficient)"
 # ---------------------------------------------------------------------------
 echo "[kirocrew-addon] Starting Kiro Crew Gateway on port 5476..."
 
+# Ensure kirocrew user owns all persistent data
+chown -R kirocrew:kirocrew /data/dot-kiro
+
+# Switch to kirocrew user (as the upstream image expects) and start gateway.
+# --preserve-environment keeps our exports (KIROCREW_HOME, KIRO_LOG_LEVEL, etc.)
 cd "${CREW_HOME}"
-kirocrew gateway &
-GATEWAY_PID=$!
-
-# Wait for gateway to be ready
-echo "[kirocrew-addon] Waiting for gateway to start..."
-for i in $(seq 1 30); do
-    if curl -sf http://localhost:5476/api/health > /dev/null 2>&1; then
-        echo "[kirocrew-addon] Gateway is ready!"
-        break
-    fi
-    sleep 2
-done
-
-# ---------------------------------------------------------------------------
-# Generate a long-lived dashboard token
-# ---------------------------------------------------------------------------
-echo "[kirocrew-addon] Generating dashboard access token..."
-TOKEN_OUTPUT=$(kirocrew token --ttl 720h 2>&1) || true
-if [ -n "$TOKEN_OUTPUT" ]; then
-    echo "[kirocrew-addon] ============================================"
-    echo "[kirocrew-addon] DASHBOARD ACCESS:"
-    echo "[kirocrew-addon] $TOKEN_OUTPUT"
-    echo "[kirocrew-addon] ============================================"
-fi
-
-# Keep the gateway running in foreground
-wait $GATEWAY_PID
+exec runuser --preserve-environment -u kirocrew -- kirocrew gateway
