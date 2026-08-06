@@ -101,11 +101,38 @@ Then tell Kiro Crew to work on `/share/repos/your-repo` from the dashboard.
 
 ## External access
 
-The dashboard is accessible via HA ingress (through your existing
-DuckDNS + Caddy setup). No extra port forwarding needed.
+The recommended way to access Kiro Crew remotely is via the
+[Cloudflared HA addon](https://github.com/homeassistant-apps/app-cloudflared).
 
-For Discord/Telegram integration, configure it inside the Kiro Crew
-dashboard — these connect outbound, no inbound ports required.
+### Setup with Cloudflared addon
+
+1. Install the [Cloudflared addon](https://github.com/homeassistant-apps/app-cloudflared)
+   and configure your Cloudflare tunnel.
+2. In the Cloudflared addon config, add an additional hostname:
+   - **Subdomain**: `kiro` (or whatever you prefer)
+   - **Domain**: your domain (e.g. `nidoran.click`)
+   - **Service**: `http://bd513314-kirocrew:5476`
+     (replace `bd513314-kirocrew` with your Kiro Crew container hostname,
+     visible in the addon logs)
+3. In the Kiro Crew addon config, set **External URL** to your
+   public hostname (e.g. `https://kiro.nidoran.click`).
+4. Restart the Kiro Crew addon.
+5. Access the dashboard at `https://kiro.nidoran.click` 🎉
+
+This approach requires no open ports on your router and provides
+HTTPS via Cloudflare's edge network.
+
+### Why not HA ingress?
+
+HA ingress serves addons under a sub-path (`/api/hassio_ingress/...`).
+Kiro Crew's SPA uses absolute paths for assets and API calls, which
+breaks under sub-path proxying. The Cloudflared tunnel maps directly
+to the root, avoiding this limitation.
+
+### Chat integrations
+
+For Discord/Telegram/Slack integration, configure it inside the Kiro
+Crew dashboard — these connect outbound, no inbound ports required.
 
 ## Troubleshooting
 

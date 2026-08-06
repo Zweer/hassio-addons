@@ -1,8 +1,10 @@
 name: Kiro Crew
-version: 0.1.15
+version: 0.1.14
 slug: kirocrew
 description: >-
-  Persistent AI development workspace that self-improves and continues beyond one session. Runs agents, scheduled jobs, and long-running tasks on your Home Assistant hardware.
+  Persistent AI development workspace that self-improves and continues beyond
+  one session. Runs agents, scheduled jobs, and long-running tasks on your
+  Home Assistant hardware.
 url: https://github.com/Zweer/hassio-addons
 arch:
   - aarch64
@@ -28,14 +30,12 @@ options:
   session_pool_size: 1
   telemetry: false
   log_level: info
-  cloudflare_tunnel_token: ''
-  cloudflare_tunnel_hostname: ''
+  external_url: ''
 schema:
   session_pool_size: int(1,4)
   telemetry: bool
   log_level: list(debug|info|warning|error)
-  cloudflare_tunnel_token: str?
-  cloudflare_tunnel_hostname: str?
+  external_url: url?
 environment: {}
 backup: hot
 backup_exclude:

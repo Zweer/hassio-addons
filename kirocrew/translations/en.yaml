@@ -15,15 +15,10 @@ configuration:
     description: >-
       Gateway log verbosity. Use 'debug' for troubleshooting,
       'info' for normal operation.
-  cloudflare_tunnel_token:
-    name: Cloudflare Tunnel Token
+  external_url:
+    name: External URL
     description: >-
-      Token from Cloudflare Zero Trust to expose the dashboard externally
-      without opening ports. Create a tunnel at dash.cloudflare.com →
-      Zero Trust → Networks → Tunnels. Leave empty to disable.
-  cloudflare_tunnel_hostname:
-    name: Cloudflare Tunnel Hostname
-    description: >-
-      The public hostname assigned to the tunnel (e.g. kiro.nidoran.click).
-      Used to configure the dashboard's allowed hosts. Required if you set
-      a tunnel token.
+      The public URL used to access Kiro Crew (e.g. https://kiro.example.com).
+      Set this when using the Cloudflared HA addon or any reverse proxy.
+      Used to allow the Host header for incoming requests. Leave empty to
+      auto-detect from HA configuration.

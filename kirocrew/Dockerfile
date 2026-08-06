@@ -14,14 +14,9 @@ LABEL \
 # HA addons run as root (Supervisor provides container-level isolation)
 USER root
 
-# Install cloudflared (tunnel) and gh CLI (GitHub operations)
-ARG BUILD_ARCH=amd64
+# Install gh CLI for GitHub operations (PR creation, issue management, etc.)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gh curl \
-    && ARCH=$([ "${BUILD_ARCH}" = "aarch64" ] && echo "arm64" || echo "amd64") \
-    && curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" \
-       -o /usr/local/bin/cloudflared \
-    && chmod +x /usr/local/bin/cloudflared \
+    && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy our entrypoint
