@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.13...kirocrew-v0.1.14) (2026-08-06)
+
+
+### Features
+
+* add nginx ingress proxy with sub_filter for path rewriting ([0f4b316](https://github.com/Zweer/hassio-addons/commit/0f4b3169e9633151c9ccc8a9edbe05ace8490066))
+
 ## [0.1.13](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.12...kirocrew-v0.1.13) (2026-08-05)
 
 
