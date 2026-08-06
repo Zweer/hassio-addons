@@ -13,6 +13,7 @@ LABEL \
 
 # HA addons run as root (Supervisor provides container-level isolation)
 USER root
+ENV HOME=/home/kirocrew
 
 # Install gh CLI for GitHub operations (PR creation, issue management, etc.)
 RUN apt-get update \
