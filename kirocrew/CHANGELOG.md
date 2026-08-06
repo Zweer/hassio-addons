@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.4...kirocrew-v0.2.5) (2026-08-06)
+
+
+### Bug Fixes
+
+* quote schema values in config.yaml to fix YAML parsing ([388a870](https://github.com/Zweer/hassio-addons/commit/388a87090f148e8345158286bcd2679f472afaa8))
+
 ## [0.2.4](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.3...kirocrew-v0.2.4) (2026-08-06)
 
 
