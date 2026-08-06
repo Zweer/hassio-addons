@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.5...kirocrew-v0.2.6) (2026-08-06)
+
+
+### Bug Fixes
+
+* use proper HA addon schema syntax for array fields ([8edfeca](https://github.com/Zweer/hassio-addons/commit/8edfecaae8899d7732bfdaab48cbfa3ea780f651))
+
 ## [0.2.5](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.4...kirocrew-v0.2.5) (2026-08-06)
 
 
