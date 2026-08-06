@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.6...kirocrew-v0.2.7) (2026-08-06)
+
+
+### Bug Fixes
+
+* change user ID fields to comma-separated strings for simpler UI ([aa57f9d](https://github.com/Zweer/hassio-addons/commit/aa57f9dd7489a0c4cfbaeb3d6ebea4acadc4c043))
+
 ## [0.2.6](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.5...kirocrew-v0.2.6) (2026-08-06)
 
 
