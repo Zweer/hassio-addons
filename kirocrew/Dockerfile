@@ -14,10 +14,13 @@ LABEL \
 # HA addons run as root (Supervisor provides container-level isolation)
 USER root
 
-# Install gh CLI for GitHub operations (PR creation, issue management, etc.)
+# Install nginx (ingress path rewrite) and gh CLI (GitHub operations)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gh \
+    && apt-get install -y --no-install-recommends nginx gh \
     && rm -rf /var/lib/apt/lists/*
+
+# Nginx config for ingress proxy
+COPY nginx.conf /etc/nginx/sites-enabled/default
 
 # Copy our entrypoint
 COPY --chmod=755 run.sh /run.sh

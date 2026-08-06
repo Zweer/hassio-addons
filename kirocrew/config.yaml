@@ -11,7 +11,7 @@ startup: application
 boot: auto
 init: false
 ingress: true
-ingress_port: 5476
+ingress_port: 5477
 ingress_stream: true
 panel_icon: mdi:robot-outline
 panel_title: Kiro Crew
@@ -22,7 +22,7 @@ map:
     read_only: false
   - type: ssl
     read_only: true
-watchdog: http://[HOST]:[PORT:5476]/
+watchdog: http://[HOST]:[PORT:5477]/api/health
 timeout: 120
 options:
   session_pool_size: 1
@@ -32,8 +32,7 @@ schema:
   session_pool_size: int(1,4)
   telemetry: bool
   log_level: list(debug|info|warning|error)
-environment:
-  KIROCREW_PORT: '5476'
+environment: {}
 backup: hot
 backup_exclude:
   - '*.log'

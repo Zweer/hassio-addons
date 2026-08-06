@@ -64,7 +64,6 @@ CREW_DATA="${CREW_HOME}/.kiro/crew"
 # Environment
 # ---------------------------------------------------------------------------
 export KIROCREW_HOME="${CREW_DATA}"
-export KIROCREW_PORT="${KIROCREW_PORT:-5476}"
 export KIROCREW_BIND="0.0.0.0"
 export KIRO_LOG_LEVEL="$LOG_LEVEL"
 export KIROCREW_CORS_ORIGINS="*"
@@ -101,7 +100,6 @@ if [ ! -f "${CREW_DATA}/config.json" ]; then
   "dashboard": {
     "bot_name": "Kiro Crew",
     "host": "0.0.0.0",
-    "port": ${KIROCREW_PORT},
     "url": "${EXTERNAL_URL}",
     "open_browser": false
   }
@@ -111,12 +109,12 @@ fi
 
 echo "[kirocrew-addon] Configuration:"
 echo "  KIROCREW_HOME=$KIROCREW_HOME"
-echo "  KIROCREW_PORT=$KIROCREW_PORT"
 echo "  HOME=$HOME"
 echo "  Pool size: $POOL_SIZE"
 echo "  Telemetry: $TELEMETRY"
 echo "  Log level: $LOG_LEVEL"
 echo "  Sandbox: off (container-level isolation is sufficient)"
+echo "  Nginx: 5477 → Crew: 5476"
 
 # ---------------------------------------------------------------------------
 # Ensure dashboard.url is always up-to-date (HA external URL may change)
@@ -142,7 +140,10 @@ fi
 # ---------------------------------------------------------------------------
 # Start
 # ---------------------------------------------------------------------------
-echo "[kirocrew-addon] Starting Kiro Crew Gateway..."
+echo "[kirocrew-addon] Starting nginx ingress proxy on port 5477..."
+nginx
+
+echo "[kirocrew-addon] Starting Kiro Crew Gateway on port 5476..."
 echo "[kirocrew-addon] Dashboard will be available via HA ingress"
 
 cd "${CREW_HOME}"
