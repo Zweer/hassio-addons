@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.2...kirocrew-v0.2.3) (2026-08-06)
+
+
+### Bug Fixes
+
+* run gateway as kirocrew user to fix kiro-cli auth in subprocesses ([81a89f0](https://github.com/Zweer/hassio-addons/commit/81a89f0072bdacb2475c11b123c873c2b0291adf))
+
 ## [0.2.2](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.1...kirocrew-v0.2.2) (2026-08-06)
 
 
