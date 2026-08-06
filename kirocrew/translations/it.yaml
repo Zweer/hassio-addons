@@ -22,3 +22,40 @@ configuration:
       Impostalo quando usi l'addon Cloudflared per HA o un reverse proxy.
       Serve per autorizzare l'header Host delle richieste in arrivo. Lascia
       vuoto per rilevarlo automaticamente dalla configurazione di HA.
+  telegram_bot_token:
+    name: Token Bot Telegram
+    description: >-
+      Token da @BotFather su Telegram. Crea un bot con /newbot e incolla
+      il token qui. Lascia vuoto per disabilitare l'integrazione Telegram.
+  telegram_allowed_user_ids:
+    name: ID Utenti Telegram Autorizzati
+    description: >-
+      Lista di ID numerici Telegram autorizzati a chattare con il bot.
+      Ottieni il tuo ID scrivendo a @userinfobot su Telegram. Solo questi
+      utenti riceveranno risposte; tutti gli altri vengono ignorati.
+  discord_bot_token:
+    name: Token Bot Discord
+    description: >-
+      Token dal Discord Developer Portal. Crea un'applicazione, aggiungi
+      un bot e copia il token qui.
+  discord_allowed_user_ids:
+    name: ID Utenti Discord Autorizzati
+    description: >-
+      Lista di ID utente Discord autorizzati a chattare con il bot.
+      Abilita la Modalità Sviluppatore nelle impostazioni Discord, poi
+      clicca destro sul tuo profilo → Copia ID Utente.
+  slack_bot_token:
+    name: Token Bot Slack
+    description: >-
+      Token del bot (xoxb-...) dalla pagina OAuth & Permissions della
+      tua app Slack.
+  slack_app_token:
+    name: Token App Slack
+    description: >-
+      Token a livello app (xapp-...) per Socket Mode. Generalo nella
+      tua app Slack sotto Basic Information → App-Level Tokens.
+  slack_owner_id:
+    name: ID Owner Slack
+    description: >-
+      Il tuo Slack Member ID (l'unico utente a cui il bot risponderà).
+      Trovalo in Slack: clicca sul tuo profilo → Altro → Copia ID Membro.
