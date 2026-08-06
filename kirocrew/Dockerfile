@@ -15,9 +15,13 @@ LABEL \
 USER root
 ENV HOME=/home/kirocrew
 
-# Install gh CLI for GitHub operations (PR creation, issue management, etc.)
+# Install runtime dependencies and tools
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gh \
+    && apt-get install -y --no-install-recommends \
+       gh \
+       vim-tiny \
+       libatomic1 \
+    && ln -s /usr/bin/vim.tiny /usr/bin/vi \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy our entrypoint
