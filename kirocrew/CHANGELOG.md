@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.15](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.14...kirocrew-v0.1.15) (2026-08-06)
+
+
+### Features
+
+* replace nginx proxy with Cloudflare Tunnel for external access ([61f535e](https://github.com/Zweer/hassio-addons/commit/61f535eeeb09ca46843b91ab5ee12927eee21e37))
+
 ## [0.1.14](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.13...kirocrew-v0.1.14) (2026-08-06)
 
 
