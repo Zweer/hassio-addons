@@ -205,9 +205,6 @@ jobs:
         with:
           ref: main
 
-      - name: Install yq
-        uses: mikefarah/yq@master
-
       - name: Update config.yaml
         run: |
           addon="kirocrew"
@@ -215,8 +212,9 @@ jobs:
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-${addon}"
 
-          yq -i ".version = \"${version}\"" "${addon}/config.yaml"
-          yq -i ".image = \"${image}\"" "${addon}/config.yaml"
+          # Use sed instead of yq to preserve quoted schema values
+          sed -i "s/^version: .*/version: ${version}/" "${addon}/config.yaml"
+          sed -i "s|^image: .*|image: ${image}|" "${addon}/config.yaml"
 
           echo "Updated ${addon}/config.yaml:"
           cat "${addon}/config.yaml"
