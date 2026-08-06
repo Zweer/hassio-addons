@@ -21,3 +21,9 @@ configuration:
       Token from Cloudflare Zero Trust to expose the dashboard externally
       without opening ports. Create a tunnel at dash.cloudflare.com →
       Zero Trust → Networks → Tunnels. Leave empty to disable.
+  cloudflare_tunnel_hostname:
+    name: Cloudflare Tunnel Hostname
+    description: >-
+      The public hostname assigned to the tunnel (e.g. kiro.nidoran.click).
+      Used to configure the dashboard's allowed hosts. Required if you set
+      a tunnel token.

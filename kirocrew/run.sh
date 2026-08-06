@@ -20,11 +20,13 @@ if [ -f "$CONFIG_PATH" ]; then
     TELEMETRY=$(python3 -c "import json; print(str(json.load(open('$CONFIG_PATH')).get('telemetry', False)).lower())")
     LOG_LEVEL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('log_level', 'info'))")
     CF_TOKEN=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('cloudflare_tunnel_token', ''))")
+    CF_HOSTNAME=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('cloudflare_tunnel_hostname', ''))")
 else
     POOL_SIZE=1
     TELEMETRY=false
     LOG_LEVEL="info"
     CF_TOKEN=""
+    CF_HOSTNAME=""
 fi
 
 # ---------------------------------------------------------------------------
@@ -92,23 +94,32 @@ fi
 
 # ---------------------------------------------------------------------------
 # Ensure dashboard.url is always up-to-date
+# Priority: cloudflare_tunnel_hostname > HA external_url
 # ---------------------------------------------------------------------------
-if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
-    CURRENT_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+DASHBOARD_URL=""
+if [ -n "$CF_HOSTNAME" ]; then
+    if [[ "$CF_HOSTNAME" != http* ]]; then
+        DASHBOARD_URL="https://${CF_HOSTNAME}"
+    else
+        DASHBOARD_URL="$CF_HOSTNAME"
+    fi
+elif [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    DASHBOARD_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
         http://supervisor/core/api/config 2>/dev/null \
         | python3 -c "import json,sys; c=json.load(sys.stdin); print(c.get('external_url',''))" 2>/dev/null) || true
-    if [ -n "${CURRENT_URL}" ]; then
-        python3 -c "
+fi
+
+if [ -n "${DASHBOARD_URL}" ]; then
+    python3 -c "
 import json
 f='${CREW_DATA}/config.json'
 try:
     cfg=json.load(open(f))
 except: cfg={}
-cfg.setdefault('dashboard',{})['url']='${CURRENT_URL}'
+cfg.setdefault('dashboard',{})['url']='${DASHBOARD_URL}'
 json.dump(cfg,open(f,'w'),indent=2)
 "
-        echo "[kirocrew-addon] dashboard.url set to: ${CURRENT_URL}"
-    fi
+    echo "[kirocrew-addon] dashboard.url set to: ${DASHBOARD_URL}"
 fi
 
 echo "[kirocrew-addon] Configuration:"
