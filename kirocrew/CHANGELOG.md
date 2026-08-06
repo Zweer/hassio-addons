@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.15...kirocrew-v0.2.0) (2026-08-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* cloudflare_tunnel_token and cloudflare_tunnel_hostname options have been removed. Use the external_url option instead and manage tunnels via the Cloudflared HA addon.
+
+### Features
+
+* add cloudflare_tunnel_hostname option for dashboard.url ([6ed29d1](https://github.com/Zweer/hassio-addons/commit/6ed29d102e69d40b7b62878f288b53102fe3b52c))
+
+
+### Refactoring
+
+* remove built-in cloudflared, use external_url option instead ([8c2fe73](https://github.com/Zweer/hassio-addons/commit/8c2fe73fb261e8ad89323329eb34ef79f77e59aa))
+
 ## [0.1.15](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.1.14...kirocrew-v0.1.15) (2026-08-06)
 
 
