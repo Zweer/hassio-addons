@@ -15,6 +15,16 @@ A persistent AI development workspace that runs [Kiro Crew](https://kiro.dev/cre
 - Optimized for RPi4 4GB
 - Access via Discord/Telegram while away
 
+### 💻 [Zed Remote](zed-remote/)
+
+SSH workspace for [Zed Remote Development](https://zed.dev/docs/remote-development) on your HA hardware.
+
+- Debian-based container (glibc) — compatible with Zed Remote server
+- SSH server with public key authentication
+- Persistent workspace, Zed server data, and SSH host keys
+- Works with Cloudflare Tunnel for remote access from anywhere
+- Access to HA config and shared storage from the workspace
+
 ## Installation
 
 Add this repository to your Home Assistant addon store:

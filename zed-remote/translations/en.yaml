@@ -1,0 +1,15 @@
+configuration:
+  authorized_keys:
+    name: Authorized Keys
+    description: >-
+      List of SSH public keys that are allowed to connect.
+      Paste the contents of your ~/.ssh/id_ed25519.pub (or id_rsa.pub) file.
+  username:
+    name: Username
+    description: >-
+      The username for SSH connections. This user will own the workspace.
+  workspace_path:
+    name: Workspace Path
+    description: >-
+      Path where your development workspace will be mounted.
+      Files here persist across addon restarts.

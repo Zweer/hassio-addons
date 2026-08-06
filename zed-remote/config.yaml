@@ -1,0 +1,40 @@
+name: Zed Remote
+version: 0.1.0
+slug: zed-remote
+description: >-
+  SSH workspace for Zed Remote Development. Provides a Debian-based container
+  with sshd accessible via Cloudflare Tunnel for native Zed editor remote
+  connections.
+url: https://github.com/Zweer/hassio-addons
+arch:
+  - aarch64
+  - amd64
+startup: system
+boot: auto
+init: false
+map:
+  - type: config
+    read_only: false
+  - type: share
+    read_only: false
+  - type: addon_config
+    read_only: false
+ports:
+  "22/tcp": 2222
+ports_description:
+  "22/tcp": SSH server
+options:
+  authorized_keys: []
+  username: developer
+  workspace_path: /workspace
+schema:
+  authorized_keys:
+    - str
+  username: str
+  workspace_path: str
+timeout: 60
+backup: hot
+backup_exclude:
+  - "*.log"
+stage: experimental
+image: ghcr.io/zweer/hassio-addons/{arch}-zed-remote
