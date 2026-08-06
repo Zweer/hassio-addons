@@ -19,13 +19,11 @@ if [ -f "$CONFIG_PATH" ]; then
     POOL_SIZE=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('session_pool_size', 1))")
     TELEMETRY=$(python3 -c "import json; print(str(json.load(open('$CONFIG_PATH')).get('telemetry', False)).lower())")
     LOG_LEVEL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('log_level', 'info'))")
-    KIRO_API_KEY=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('kiro_api_key', ''))")
     EXTERNAL_URL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('external_url', ''))")
 else
     POOL_SIZE=1
     TELEMETRY=false
     LOG_LEVEL="info"
-    KIRO_API_KEY=""
     EXTERNAL_URL=""
 fi
 
@@ -52,15 +50,6 @@ CREW_DATA="${CREW_HOME}/.kiro/crew"
 export KIROCREW_HOME="${CREW_DATA}"
 export KIROCREW_BIND="0.0.0.0"
 export KIRO_LOG_LEVEL="$LOG_LEVEL"
-export HOME="${CREW_HOME}"
-
-# Kiro API key — enables headless login (no browser auth needed)
-if [ -n "$KIRO_API_KEY" ]; then
-    export KIRO_API_KEY
-    echo "[kirocrew-addon] KIRO_API_KEY set — headless authentication enabled"
-else
-    echo "[kirocrew-addon] No KIRO_API_KEY — run 'kiro-cli login' manually in the container"
-fi
 
 if [ "$TELEMETRY" = "false" ]; then
     export KIROCREW_TELEMETRY_DISABLED=1
@@ -116,7 +105,6 @@ fi
 
 echo "[kirocrew-addon] Configuration:"
 echo "  KIROCREW_HOME=$KIROCREW_HOME"
-echo "  HOME=$HOME"
 echo "  Pool size: $POOL_SIZE"
 echo "  Telemetry: $TELEMETRY"
 echo "  Log level: $LOG_LEVEL"

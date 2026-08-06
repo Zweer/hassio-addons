@@ -15,12 +15,6 @@ configuration:
     description: >-
       Gateway log verbosity. Use 'debug' for troubleshooting,
       'info' for normal operation.
-  kiro_api_key:
-    name: Kiro API Key
-    description: >-
-      API key from app.kiro.dev (Settings → API Keys). Enables headless
-      authentication — no manual 'kiro-cli login' needed. The key does
-      not expire.
   external_url:
     name: External URL
     description: >-

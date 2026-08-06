@@ -32,7 +32,6 @@ schema:
   session_pool_size: int(1,4)
   telemetry: bool
   log_level: list(debug|info|warning|error)
-  kiro_api_key: password?
   external_url: url?
 environment: {}
 backup: hot
