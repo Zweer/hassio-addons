@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.10...kirocrew-v0.2.11) (2026-08-07)
+
+
+### Features
+
+* generate 1-year dashboard token at startup and print in logs ([2e69e9a](https://github.com/Zweer/hassio-addons/commit/2e69e9abf18bbe5d489563e80fb2058e85e9fa8f))
+
 ## [0.2.10](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.9...kirocrew-v0.2.10) (2026-08-07)
 
 
