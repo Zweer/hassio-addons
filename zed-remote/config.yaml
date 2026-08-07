@@ -1,5 +1,5 @@
 name: Zed Remote
-version: 0.1.0
+version: 0.1.1
 slug: zed-remote
 description: >-
   SSH workspace for Zed Remote Development. Provides a Debian-based container
@@ -20,9 +20,9 @@ map:
   - type: addon_config
     read_only: false
 ports:
-  "22/tcp": 2222
+  22/tcp: 2222
 ports_description:
-  "22/tcp": SSH server
+  22/tcp: SSH server
 options:
   authorized_keys: []
   username: developer
@@ -35,6 +35,6 @@ schema:
 timeout: 60
 backup: hot
 backup_exclude:
-  - "*.log"
+  - '*.log'
 stage: experimental
 image: ghcr.io/zweer/hassio-addons/{arch}-zed-remote
