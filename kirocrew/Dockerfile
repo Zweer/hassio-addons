@@ -24,7 +24,7 @@ RUN apt-get update \
        libatomic1 \
        curl \
        ca-certificates \
-    && ln -s /usr/bin/vim.tiny /usr/bin/vi \
+    && ln -sf /usr/bin/vim.tiny /usr/bin/vi \
     && rm -rf /var/lib/apt/lists/*
 
 # Install nvm + Node.js LTS for the kirocrew user

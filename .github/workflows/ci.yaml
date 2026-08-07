@@ -110,7 +110,6 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      releases_created: ${{ steps.release.outputs.releases_created }}
       kirocrew_released: ${{ steps.release.outputs['kirocrew--release_created'] }}
       kirocrew_version: ${{ steps.release.outputs['kirocrew--version'] }}
       kirocrew_tag: ${{ steps.release.outputs['kirocrew--tag_name'] }}
@@ -125,57 +124,32 @@ jobs:
           config-file: "release-please-config.json"
 
   # ─────────────────────────────────────────────────────────────
-  # Build (on release) — triggered only when release-please creates a release
+  # Build kirocrew — only when released
   # ─────────────────────────────────────────────────────────────
-  build-on-release:
-    name: Build ${{ matrix.addon }} (${{ matrix.arch }})
+  build-kirocrew:
+    name: Build kirocrew (${{ matrix.arch }})
     needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    if: needs.release-please.outputs.kirocrew_released == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        arch: [aarch64, amd64]
         include:
-          - addon: kirocrew
-            arch: aarch64
+          - arch: aarch64
             platform: linux/arm64
-            released: ${{ needs.release-please.outputs.kirocrew_released }}
-            version: ${{ needs.release-please.outputs.kirocrew_version }}
-          - addon: kirocrew
-            arch: amd64
+          - arch: amd64
             platform: linux/amd64
-            released: ${{ needs.release-please.outputs.kirocrew_released }}
-            version: ${{ needs.release-please.outputs.kirocrew_version }}
-          - addon: zed-remote
-            arch: aarch64
-            platform: linux/arm64
-            released: ${{ needs.release-please.outputs['zed-remote_released'] }}
-            version: ${{ needs.release-please.outputs['zed-remote_version'] }}
-          - addon: zed-remote
-            arch: amd64
-            platform: linux/amd64
-            released: ${{ needs.release-please.outputs['zed-remote_released'] }}
-            version: ${{ needs.release-please.outputs['zed-remote_version'] }}
     steps:
-      - name: Skip if not released
-        if: matrix.released != 'true'
-        run: |
-          echo "Skipping ${{ matrix.addon }} (${{ matrix.arch }}) — not released this run"
-          exit 0
-
       - name: Checkout
-        if: matrix.released == 'true'
         uses: actions/checkout@v7
 
-      - name: Set image metadata
-        if: matrix.released == 'true'
+      - name: Set metadata
         id: meta
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${owner}" >> "$GITHUB_OUTPUT"
-          echo "Building ${{ matrix.addon }} v${{ matrix.version }} for ${{ matrix.arch }}"
 
       - name: Login to GHCR
-        if: matrix.released == 'true'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
@@ -183,32 +157,88 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: matrix.released == 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        if: matrix.released == 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push
-        if: matrix.released == 'true'
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.addon }}
-          file: ${{ matrix.addon }}/Dockerfile
+          context: kirocrew
+          file: kirocrew/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-${{ matrix.addon }}:${{ matrix.version }}
-            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-${{ matrix.addon }}:latest
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-kirocrew:${{ needs.release-please.outputs.kirocrew_version }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-kirocrew:latest
           build-args: |
-            BUILD_VERSION=${{ matrix.version }}
+            BUILD_VERSION=${{ needs.release-please.outputs.kirocrew_version }}
             BUILD_ARCH=${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
-            org.opencontainers.image.title=${{ matrix.addon }} HA Addon
-            org.opencontainers.image.version=${{ matrix.version }}
+            org.opencontainers.image.title=Kiro Crew HA Addon
+            org.opencontainers.image.version=${{ needs.release-please.outputs.kirocrew_version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  # ─────────────────────────────────────────────────────────────
+  # Build zed-remote — only when released
+  # ─────────────────────────────────────────────────────────────
+  build-zed-remote:
+    name: Build zed-remote (${{ matrix.arch }})
+    needs: release-please
+    if: needs.release-please.outputs.zed-remote_released == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [aarch64, amd64]
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: amd64
+            platform: linux/amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set metadata
+        id: meta
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: zed-remote
+          file: zed-remote/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-zed-remote:${{ needs.release-please.outputs.zed-remote_version }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-zed-remote:latest
+          build-args: |
+            BUILD_VERSION=${{ needs.release-please.outputs.zed-remote_version }}
+            BUILD_ARCH=${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Zed Remote HA Addon
+            org.opencontainers.image.version=${{ needs.release-please.outputs.zed-remote_version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   # ─────────────────────────────────────────────────────────────
@@ -220,9 +250,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch:
-          - aarch64
-          - amd64
+        arch: [aarch64, amd64]
         include:
           - arch: aarch64
             platform: linux/arm64
@@ -240,7 +268,7 @@ jobs:
           version=$(python3 -c "import yaml; print(yaml.safe_load(open('${addon}/config.yaml'))['version'])")
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "owner=${owner}" >> "$GITHUB_OUTPUT"
-          echo "Building ${addon} v${version} for ${{ matrix.arch }} (owner: ${owner})"
+          echo "Building ${addon} v${version} for ${{ matrix.arch }}"
 
       - name: Login to GHCR
         uses: docker/login-action@v4
@@ -276,12 +304,14 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   # ─────────────────────────────────────────────────────────────
-  # Update config.yaml with image reference after release build
+  # Update config.yaml after release builds
   # ─────────────────────────────────────────────────────────────
   update-config:
     name: Update config
-    needs: [release-please, build-on-release]
-    if: needs.release-please.outputs.releases_created == 'true' && needs.build-on-release.result == 'success'
+    needs: [release-please, build-kirocrew, build-zed-remote]
+    if: |
+      always() &&
+      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -293,8 +323,8 @@ jobs:
         env:
           KIROCREW_RELEASED: ${{ needs.release-please.outputs.kirocrew_released }}
           KIROCREW_VERSION: ${{ needs.release-please.outputs.kirocrew_version }}
-          ZED_REMOTE_RELEASED: ${{ needs.release-please.outputs['zed-remote_released'] }}
-          ZED_REMOTE_VERSION: ${{ needs.release-please.outputs['zed-remote_version'] }}
+          ZED_REMOTE_RELEASED: ${{ needs.release-please.outputs.zed-remote_released }}
+          ZED_REMOTE_VERSION: ${{ needs.release-please.outputs.zed-remote_version }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           updated=false
