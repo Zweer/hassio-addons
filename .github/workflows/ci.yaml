@@ -14,6 +14,7 @@ on:
         type: choice
         options:
           - kirocrew
+          - zed-remote
       force_build:
         description: "Force build even without a release"
         type: boolean
@@ -94,6 +95,13 @@ jobs:
           failure-threshold: warning
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
+      - name: Lint Dockerfiles (zed-remote)
+        uses: hadolint/hadolint-action@v3.4.0
+        with:
+          dockerfile: "zed-remote/Dockerfile"
+          failure-threshold: warning
+          ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
+
   # ─────────────────────────────────────────────────────────────
   # Release Please — only on push to main
   # ─────────────────────────────────────────────────────────────
@@ -106,6 +114,9 @@ jobs:
       kirocrew_released: ${{ steps.release.outputs['kirocrew--release_created'] }}
       kirocrew_version: ${{ steps.release.outputs['kirocrew--version'] }}
       kirocrew_tag: ${{ steps.release.outputs['kirocrew--tag_name'] }}
+      zed-remote_released: ${{ steps.release.outputs['zed-remote--release_created'] }}
+      zed-remote_version: ${{ steps.release.outputs['zed-remote--version'] }}
+      zed-remote_tag: ${{ steps.release.outputs['zed-remote--tag_name'] }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
@@ -114,22 +125,59 @@ jobs:
           config-file: "release-please-config.json"
 
   # ─────────────────────────────────────────────────────────────
-  # Build — after release-please creates a release, or on manual dispatch
+  # Build matrix — determines which addons to build
   # ─────────────────────────────────────────────────────────────
-  build:
-    name: Build ${{ matrix.arch }}
+  prepare-build:
+    name: Prepare build matrix
     needs: release-please
     if: |
       always() && (
         needs.release-please.outputs.kirocrew_released == 'true' ||
+        needs.release-please.outputs['zed-remote_released'] == 'true' ||
         (github.event_name == 'workflow_dispatch' && inputs.force_build)
       )
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.result }}
+    steps:
+      - name: Build matrix
+        id: matrix
+        uses: actions/github-script@v7
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ADDON: ${{ inputs.addon }}
+          KIROCREW_RELEASED: ${{ needs.release-please.outputs.kirocrew_released }}
+          KIROCREW_VERSION: ${{ needs.release-please.outputs.kirocrew_version }}
+          ZED_REMOTE_RELEASED: ${{ needs.release-please.outputs['zed-remote_released'] }}
+          ZED_REMOTE_VERSION: ${{ needs.release-please.outputs['zed-remote_version'] }}
+        with:
+          script: |
+            const addons = [];
+            if (process.env.EVENT_NAME === 'workflow_dispatch') {
+              addons.push(process.env.INPUT_ADDON);
+            } else {
+              if (process.env.KIROCREW_RELEASED === 'true') addons.push('kirocrew');
+              if (process.env.ZED_REMOTE_RELEASED === 'true') addons.push('zed-remote');
+            }
+            const matrix = {
+              include: addons.flatMap(addon => [
+                { addon, arch: 'aarch64', platform: 'linux/arm64' },
+                { addon, arch: 'amd64', platform: 'linux/amd64' }
+              ])
+            };
+            console.log('Build matrix:', JSON.stringify(matrix, null, 2));
+            return matrix;
+
+  # ─────────────────────────────────────────────────────────────
+  # Build — parallel builds for each addon × arch
+  # ─────────────────────────────────────────────────────────────
+  build:
+    name: Build ${{ matrix.addon }} (${{ matrix.arch }})
+    needs: [release-please, prepare-build]
+    if: always() && needs.prepare-build.result == 'success'
+    runs-on: ubuntu-latest
     strategy:
-      matrix:
-        arch:
-          - aarch64
-          - amd64
+      matrix: ${{ fromJson(needs.prepare-build.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -138,12 +186,14 @@ jobs:
         id: version
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          addon="${{ matrix.addon }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            version=$(python3 -c "import yaml; print(yaml.safe_load(open('${{ inputs.addon }}/config.yaml'))['version'])")
-            addon="${{ inputs.addon }}"
+            version=$(python3 -c "import yaml; print(yaml.safe_load(open('${addon}/config.yaml'))['version'])")
           else
-            version="${{ needs.release-please.outputs.kirocrew_version }}"
-            addon="kirocrew"
+            case "${addon}" in
+              kirocrew)   version="${{ needs.release-please.outputs.kirocrew_version }}" ;;
+              zed-remote) version="${{ needs.release-please.outputs['zed-remote_version'] }}" ;;
+            esac
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "addon=${addon}" >> "$GITHUB_OUTPUT"
@@ -163,20 +213,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Map arch to Docker platform
-        id: platform
-        run: |
-          case "${{ matrix.arch }}" in
-            aarch64) echo "platform=linux/arm64" >> "$GITHUB_OUTPUT" ;;
-            amd64)   echo "platform=linux/amd64" >> "$GITHUB_OUTPUT" ;;
-          esac
-
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: ${{ steps.version.outputs.addon }}
           file: ${{ steps.version.outputs.addon }}/Dockerfile
-          platforms: ${{ steps.platform.outputs.platform }}
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ steps.version.outputs.owner }}/hassio-addons/${{ matrix.arch }}-${{ steps.version.outputs.addon }}:${{ steps.version.outputs.version }}
@@ -187,7 +229,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           labels: |
-            org.opencontainers.image.title=Kiro Crew HA Addon
+            org.opencontainers.image.title=${{ matrix.addon }} HA Addon
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
@@ -195,24 +237,42 @@ jobs:
   # Update config.yaml with image reference after build
   # ─────────────────────────────────────────────────────────────
   update-config:
-    name: Update config with image
+    name: Update config (${{ matrix.addon }})
     needs: [release-please, build]
-    if: needs.release-please.outputs.kirocrew_released == 'true'
+    if: |
+      always() && needs.build.result == 'success' && (
+        needs.release-please.outputs.kirocrew_released == 'true' ||
+        needs.release-please.outputs['zed-remote_released'] == 'true'
+      )
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - addon: kirocrew
+            released: ${{ needs.release-please.outputs.kirocrew_released }}
+            version: ${{ needs.release-please.outputs.kirocrew_version }}
+          - addon: zed-remote
+            released: ${{ needs.release-please.outputs['zed-remote_released'] }}
+            version: ${{ needs.release-please.outputs['zed-remote_version'] }}
     steps:
+      - name: Skip if not released
+        if: matrix.released != 'true'
+        run: echo "Skipping ${{ matrix.addon }} — not released"
+
       - name: Checkout
+        if: matrix.released == 'true'
         uses: actions/checkout@v7
         with:
           ref: main
 
       - name: Update config.yaml
+        if: matrix.released == 'true'
         run: |
-          addon="kirocrew"
-          version="${{ needs.release-please.outputs.kirocrew_version }}"
+          addon="${{ matrix.addon }}"
+          version="${{ matrix.version }}"
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-${addon}"
 
-          # Use sed instead of yq to preserve quoted schema values
           sed -i "s/^version: .*/version: ${version}/" "${addon}/config.yaml"
           sed -i "s|^image: .*|image: ${image}|" "${addon}/config.yaml"
 
@@ -220,11 +280,12 @@ jobs:
           cat "${addon}/config.yaml"
 
       - name: Commit and push
+        if: matrix.released == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "kirocrew/config.yaml"
+          git add "${{ matrix.addon }}/config.yaml"
           git diff --cached --quiet || {
-            git commit -m "ci: update kirocrew image to v${{ needs.release-please.outputs.kirocrew_version }} [skip ci]"
+            git commit -m "ci: update ${{ matrix.addon }} image to v${{ matrix.version }} [skip ci]"
             git push
           }
