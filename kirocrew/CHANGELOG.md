@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.7...kirocrew-v0.2.8) (2026-08-07)
+
+
+### Bug Fixes
+
+* **kirocrew:** add SHELL pipefail for hadolint DL4006 ([4b6083e](https://github.com/Zweer/hassio-addons/commit/4b6083e56eaf2981942303e6bda819494a93884b))
+
 ## [0.2.7](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.6...kirocrew-v0.2.7) (2026-08-06)
 
 
