@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.10](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.9...kirocrew-v0.2.10) (2026-08-07)
+
+
+### Bug Fixes
+
+* revert user IDs to proper int/str arrays in schema ([9a28581](https://github.com/Zweer/hassio-addons/commit/9a285819c5d0fbb5e06099b495071b8f9d4bb570))
+
 ## [0.2.9](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.8...kirocrew-v0.2.9) (2026-08-07)
 
 
