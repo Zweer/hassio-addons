@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.8...kirocrew-v0.2.9) (2026-08-07)
+
+
+### Bug Fixes
+
+* **ci:** separate build jobs per addon + fix kirocrew symlink ([2e01bba](https://github.com/Zweer/hassio-addons/commit/2e01bba9b3c90fc0a08b3393bcf8f781b7ede37c))
+
 ## [0.2.8](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.7...kirocrew-v0.2.8) (2026-08-07)
 
 
