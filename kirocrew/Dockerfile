@@ -13,6 +13,7 @@ LABEL \
 
 # HA addons run as root (Supervisor provides container-level isolation)
 USER root
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV HOME=/home/kirocrew
 
 # Install runtime dependencies and tools
