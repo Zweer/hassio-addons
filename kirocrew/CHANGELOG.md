@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.12](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.11...kirocrew-v0.2.12) (2026-08-21)
+
+
+### Features
+
+* add kiro_api_key option for headless authentication ([6157f50](https://github.com/Zweer/hassio-addons/commit/6157f502d3bc9c8c24784490afde8a54a431a497))
+
 ## [0.2.11](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.10...kirocrew-v0.2.11) (2026-08-07)
 
 
