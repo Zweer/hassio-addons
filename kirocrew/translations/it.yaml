@@ -15,6 +15,12 @@ configuration:
     description: >-
       Verbosità dei log del gateway. Usa 'debug' per troubleshooting,
       'info' per operazione normale.
+  kiro_api_key:
+    name: Kiro API Key
+    description: >-
+      API key da app.kiro.dev (Settings → API Keys). Abilita l'autenticazione
+      headless — non serve il device-code login manuale. Scritta nel file
+      .env di Crew così sia il gateway che gli agenti la usano automaticamente.
   external_url:
     name: URL Esterno
     description: >-

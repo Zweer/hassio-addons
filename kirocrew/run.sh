@@ -20,6 +20,7 @@ if [ -f "$CONFIG_PATH" ]; then
     TELEMETRY=$(python3 -c "import json; print(str(json.load(open('$CONFIG_PATH')).get('telemetry', False)).lower())")
     LOG_LEVEL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('log_level', 'info'))")
     EXTERNAL_URL=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('external_url', ''))")
+    KIRO_API_KEY=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('kiro_api_key', ''))")
     TELEGRAM_TOKEN=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('telegram_bot_token', ''))")
     TELEGRAM_IDS=$(python3 -c "import json; print(json.dumps(json.load(open('$CONFIG_PATH')).get('telegram_allowed_user_ids', [])))")
     DISCORD_TOKEN=$(python3 -c "import json; print(json.load(open('$CONFIG_PATH')).get('discord_bot_token', ''))")
@@ -32,6 +33,7 @@ else
     TELEMETRY=false
     LOG_LEVEL="info"
     EXTERNAL_URL=""
+    KIRO_API_KEY=""
     TELEGRAM_TOKEN=""
     TELEGRAM_IDS="[]"
     DISCORD_TOKEN=""
@@ -67,6 +69,19 @@ export KIRO_LOG_LEVEL="$LOG_LEVEL"
 
 if [ "$TELEMETRY" = "false" ]; then
     export KIROCREW_TELEMETRY_DISABLED=1
+fi
+
+# Kiro API key — written to Crew's .env so the gateway and kiro-cli both use it
+if [ -n "$KIRO_API_KEY" ]; then
+    # Crew reads ~/.kiro/crew/.env automatically
+    ENV_FILE="${CREW_DATA}/.env"
+    # Preserve existing .env entries, update/add KIRO_API_KEY
+    if [ -f "$ENV_FILE" ]; then
+        sed -i '/^KIRO_API_KEY=/d' "$ENV_FILE"
+    fi
+    echo "KIRO_API_KEY=${KIRO_API_KEY}" >> "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+    echo "[kirocrew-addon] KIRO_API_KEY written to .env — headless auth enabled"
 fi
 
 # Telegram bot token (env var is preferred over config.json per Crew docs)
