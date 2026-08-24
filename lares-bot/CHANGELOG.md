@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.1...lares-bot-v0.1.2) (2026-08-24)
+
+
+### Features
+
+* **lares-bot:** add MQTT sensors and HA dashboard ([5b8d7d7](https://github.com/Zweer/hassio-addons/commit/5b8d7d772c54a09ca76d19fc0cb61b5ec7ba6fe6))
+
 ## [0.1.1](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.0...lares-bot-v0.1.1) (2026-08-24)
 
 
