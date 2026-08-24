@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.13](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.12...kirocrew-v0.2.13) (2026-08-24)
+
+
+### Bug Fixes
+
+* disable local embeddings and clear crash dumps on startup ([069dbd9](https://github.com/Zweer/hassio-addons/commit/069dbd994c0912dd9b50d385bd11850d861ad594))
+
 ## [0.2.12](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.11...kirocrew-v0.2.12) (2026-08-21)
 
 
