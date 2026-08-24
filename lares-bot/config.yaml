@@ -1,5 +1,5 @@
 name: Lares Bot
-version: 0.1.0
+version: 0.1.1
 slug: lares-bot
 description: >-
   Automated strategy bot for Lares. Runs 24/7 on your Home Assistant hardware,
@@ -18,12 +18,12 @@ map:
     read_only: false
 watchdog: null
 options:
-  github_pat: ""
-  lares_api_url: ""
-  lares_token: ""
-  lares_village_id: ""
+  github_pat: ''
+  lares_api_url: ''
+  lares_token: ''
+  lares_village_id: ''
   lares_poll_interval: 20
-  discord_webhook_url: ""
+  discord_webhook_url: ''
 schema:
   github_pat: password
   lares_api_url: url
