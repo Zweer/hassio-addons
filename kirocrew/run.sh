@@ -190,6 +190,24 @@ echo "  Sandbox: off (container-level isolation is sufficient)"
 # ---------------------------------------------------------------------------
 # Start Kiro Crew Gateway
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Housekeeping: remove stale crash dumps (they slow down startup on low-RAM)
+# and disable local embedding model on constrained hardware
+# ---------------------------------------------------------------------------
+rm -rf "${CREW_DATA}/logs/crash-dumps" 2>/dev/null || true
+
+# Disable local embedding model (uses too much RAM/CPU on RPi4)
+# Falls back to keyword search which is fast and lightweight
+python3 -c "
+import json
+f='${CREW_DATA}/config.json'
+try:
+    cfg=json.load(open(f))
+except: cfg={}
+cfg.setdefault('knowledge',{})['embed_content_budget'] = 0
+json.dump(cfg,open(f,'w'),indent=2)
+"
+
 echo "[kirocrew-addon] Starting Kiro Crew Gateway on port 5476..."
 
 # Ensure kirocrew user owns all persistent data
