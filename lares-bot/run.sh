@@ -28,6 +28,18 @@ if [ -n "$DISCORD_WEBHOOK_URL" ]; then
   export DISCORD_WEBHOOK_URL
 fi
 
+export MQTT_HOST
+MQTT_HOST=$(jq -r '.mqtt_host' "$CONFIG_PATH")
+
+export MQTT_PORT
+MQTT_PORT=$(jq -r '.mqtt_port' "$CONFIG_PATH")
+
+export MQTT_USER
+MQTT_USER=$(jq -r '.mqtt_user' "$CONFIG_PATH")
+
+export MQTT_PASSWORD
+MQTT_PASSWORD=$(jq -r '.mqtt_password' "$CONFIG_PATH")
+
 # ─── Build function ──────────────────────────────────────────────────────────
 build_bot() {
   echo "[lares-bot] Cloning and building..."

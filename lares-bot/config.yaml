@@ -23,7 +23,11 @@ options:
   lares_token: ''
   lares_village_id: ''
   lares_poll_interval: 20
-  discord_webhook_url: ''
+  discord_webhook_url: ""
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_user: ""
+  mqtt_password: ""
 schema:
   github_pat: password
   lares_api_url: url
@@ -31,5 +35,9 @@ schema:
   lares_village_id: str
   lares_poll_interval: int(5,120)
   discord_webhook_url: url?
+  mqtt_host: str
+  mqtt_port: port
+  mqtt_user: str
+  mqtt_password: password
 environment: {}
 stage: experimental

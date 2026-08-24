@@ -1,0 +1,299 @@
+## Lares Bot — Home Assistant Dashboard
+##
+## Come usare:
+## 1. In HA vai su Settings → Dashboards → Add Dashboard → "From YAML"
+## 2. Copia questo file in /config/dashboards/lares-bot.yaml
+## 3. Oppure copia le singole cards in una dashboard esistente
+##
+## Custom cards richieste (installa via HACS):
+## - lovelace-entity-progress-card (per le barre risorse)
+## - timer-bar-card (per i cooldown)
+##
+## Se non vuoi installare custom cards, le sezioni alternative
+## con cards native sono commentate sotto ogni sezione.
+
+title: Lares Bot
+views:
+  - title: Overview
+    path: overview
+    icon: mdi:sword-cross
+    type: sections
+    sections:
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # RISORSE (Badges in cima)
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: grid
+        cards:
+          - type: heading
+            heading: "⚔️ Lares Bot"
+            heading_style: title
+
+    badges:
+      - type: entity
+        entity: sensor.lares_bot_sustenance
+        name: Food
+        color: green
+      - type: entity
+        entity: sensor.lares_bot_materia
+        name: Materia
+        color: blue-grey
+      - type: entity
+        entity: sensor.lares_bot_lore
+        name: Lore
+        color: purple
+      - type: entity
+        entity: sensor.lares_bot_trade_goods
+        name: Trade
+        color: amber
+      - type: entity
+        entity: sensor.lares_bot_faith
+        name: Faith
+        color: cyan
+
+    cards:
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # RISORSE — Barre di riempimento
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Resources
+            icon: mdi:warehouse
+
+          # Barre di riempimento risorse (% del cap)
+          - type: gauge
+            entity: sensor.lares_bot_sustenance
+            name: Sustenance
+            needle: true
+            min: 0
+            max: 5000
+            severity:
+              green: 2000
+              yellow: 1000
+              red: 0
+          - type: gauge
+            entity: sensor.lares_bot_materia
+            name: Materia
+            needle: true
+            min: 0
+            max: 5000
+            severity:
+              green: 2000
+              yellow: 1000
+              red: 0
+          - type: gauge
+            entity: sensor.lares_bot_lore
+            name: Lore
+            needle: true
+            min: 0
+            max: 5000
+            severity:
+              green: 2000
+              yellow: 1000
+              red: 0
+          - type: gauge
+            entity: sensor.lares_bot_faith
+            name: Faith
+            needle: true
+            min: 0
+            max: 500
+            severity:
+              green: 200
+              yellow: 100
+              red: 0
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # MILITARE
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Military
+            icon: mdi:shield-sword
+
+          - type: entities
+            entities:
+              - entity: sensor.lares_bot_army_power
+                name: Army Power
+                icon: mdi:sword-cross
+              - entity: sensor.lares_bot_army_count
+                name: Unit Count
+                icon: mdi:account-group
+              - entity: sensor.lares_bot_upkeep
+                name: Upkeep
+                icon: mdi:food-apple
+
+          - type: gauge
+            entity: sensor.lares_bot_wall_hp
+            name: Wall Integrity
+            needle: true
+            min: 0
+            max: 1000
+            severity:
+              green: 700
+              yellow: 400
+              red: 0
+
+          - type: gauge
+            entity: sensor.lares_bot_morale
+            name: Morale
+            needle: true
+            unit: "%"
+            min: 0
+            max: 100
+            severity:
+              green: 60
+              yellow: 30
+              red: 0
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # BUILD QUEUE & COOLDOWNS
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Build Queue
+            icon: mdi:hammer-wrench
+
+          - type: entities
+            entities:
+              - entity: sensor.lares_bot_current_build
+                name: Building
+                icon: mdi:progress-wrench
+              - entity: sensor.lares_bot_build_eta
+                name: Completes
+                icon: mdi:timer-sand
+                format: relative
+              - entity: sensor.lares_bot_build_queue
+                name: Queue Size
+                icon: mdi:playlist-play
+
+          - type: heading
+            heading: Cooldowns
+            icon: mdi:timer-outline
+
+          - type: entities
+            entities:
+              - entity: sensor.lares_bot_festival_cooldown
+                name: Festival
+                icon: mdi:party-popper
+                format: relative
+              - entity: sensor.lares_bot_sacrifice_cooldown
+                name: Sacrifice
+                icon: mdi:knife
+                format: relative
+              - entity: sensor.lares_bot_power_cooldowns
+                name: Powers on Cooldown
+                icon: mdi:lightning-bolt-circle
+              - entity: sensor.lares_bot_active_buffs
+                name: Active Buffs
+                icon: mdi:lightning-bolt
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # THREATS & OPERATIONS
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Operations
+            icon: mdi:radar
+
+          # Alert se ci sono attacchi in arrivo
+          - type: conditional
+            conditions:
+              - condition: numeric_state
+                entity: sensor.lares_bot_incoming_attacks
+                above: 0
+            card:
+              type: tile
+              entity: sensor.lares_bot_incoming_attacks
+              name: "🚨 INCOMING ATTACKS"
+              color: red
+              icon: mdi:alert-octagon
+
+          - type: entities
+            entities:
+              - entity: sensor.lares_bot_outgoing_raids
+                name: Raids in Flight
+                icon: mdi:sword
+              - entity: sensor.lares_bot_outgoing_scouts
+                name: Scouts in Flight
+                icon: mdi:eye
+              - entity: sensor.lares_bot_incoming_attacks
+                name: Incoming Threats
+                icon: mdi:shield-alert
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # SHAMAN
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Shaman
+            icon: mdi:shield-account
+
+          - type: gauge
+            entity: sensor.lares_bot_shaman_hp
+            name: Shaman HP
+            needle: true
+            min: 0
+            max: 200
+
+          - type: entities
+            entities:
+              - entity: sensor.lares_bot_population
+                name: Population
+                icon: mdi:account-multiple
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # HISTORY — Grafici andamento
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: History
+            icon: mdi:chart-line
+
+          - type: history-graph
+            title: Resources (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.lares_bot_sustenance
+                name: Food
+              - entity: sensor.lares_bot_materia
+                name: Materia
+              - entity: sensor.lares_bot_lore
+                name: Lore
+
+          - type: history-graph
+            title: Military (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.lares_bot_army_power
+                name: Army Power
+              - entity: sensor.lares_bot_faith
+                name: Faith
+              - entity: sensor.lares_bot_wall_hp
+                name: Walls
+
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      # BOT CONTROLS
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      - type: vertical-stack
+        cards:
+          - type: heading
+            heading: Bot Controls
+            icon: mdi:robot
+
+          - type: button
+            name: Rebuild Bot
+            icon: mdi:refresh
+            tap_action:
+              action: perform-action
+              perform_action: hassio.addon_stdin
+              data:
+                addon: lares-bot
+                input:
+                  command: rebuild
+              confirmation:
+                text: "Pull latest code and rebuild the bot?"
