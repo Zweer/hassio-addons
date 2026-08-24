@@ -1,5 +1,5 @@
 name: Lares Bot
-version: 0.1.1
+version: 0.1.2
 slug: lares-bot
 description: >-
   Automated strategy bot for Lares. Runs 24/7 on your Home Assistant hardware,
@@ -23,11 +23,11 @@ options:
   lares_token: ''
   lares_village_id: ''
   lares_poll_interval: 20
-  discord_webhook_url: ""
-  mqtt_host: "core-mosquitto"
+  discord_webhook_url: ''
+  mqtt_host: core-mosquitto
   mqtt_port: 1883
-  mqtt_user: ""
-  mqtt_password: ""
+  mqtt_user: ''
+  mqtt_password: ''
 schema:
   github_pat: password
   lares_api_url: url
