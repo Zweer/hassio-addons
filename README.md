@@ -25,6 +25,15 @@ SSH workspace for [Zed Remote Development](https://zed.dev/docs/remote-developme
 - Works with Cloudflare Tunnel for remote access from anywhere
 - Access to HA config and shared storage from the workspace
 
+### ⚔️ [Lares Bot](lares-bot/)
+
+Automated strategy bot for Lares running 24/7 on your HA hardware.
+
+- Optimized build queue, faith powers, spying, and raids
+- Configurable polling interval (default 20s)
+- Discord webhook notifications
+- Local build — no CI needed, just `./deploy.sh`
+
 ## Installation
 
 Add this repository to your Home Assistant addon store:

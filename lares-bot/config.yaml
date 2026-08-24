@@ -1,0 +1,35 @@
+name: Lares Bot
+version: 0.1.0
+slug: lares-bot
+description: >-
+  Automated strategy bot for Lares. Runs 24/7 on your Home Assistant hardware,
+  managing builds, troops, faith powers, and resource optimization.
+url: https://github.com/Zweer/hassio-addons
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+stdin: true
+hassio_api: true
+map:
+  - type: share
+    read_only: false
+watchdog: null
+options:
+  github_pat: ""
+  lares_api_url: ""
+  lares_token: ""
+  lares_village_id: ""
+  lares_poll_interval: 20
+  discord_webhook_url: ""
+schema:
+  github_pat: password
+  lares_api_url: url
+  lares_token: password
+  lares_village_id: str
+  lares_poll_interval: int(5,120)
+  discord_webhook_url: url?
+environment: {}
+stage: experimental

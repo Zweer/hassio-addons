@@ -29,6 +29,13 @@
       "extra-files": [
         "config.yaml"
       ]
+    },
+    "lares-bot": {
+      "component": "lares-bot",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "config.yaml"
+      ]
     }
   }
 }

@@ -15,6 +15,7 @@ on:
         options:
           - kirocrew
           - zed-remote
+          - lares-bot
       force_build:
         description: "Force build even without a release"
         type: boolean
@@ -102,6 +103,13 @@ jobs:
           failure-threshold: warning
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
+      - name: Lint Dockerfiles (lares-bot)
+        uses: hadolint/hadolint-action@v3.4.0
+        with:
+          dockerfile: "lares-bot/Dockerfile"
+          failure-threshold: warning
+          ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
+
   # ─────────────────────────────────────────────────────────────
   # Release Please — only on push to main
   # ─────────────────────────────────────────────────────────────
@@ -116,6 +124,9 @@ jobs:
       zed-remote_released: ${{ steps.release.outputs['zed-remote--release_created'] }}
       zed-remote_version: ${{ steps.release.outputs['zed-remote--version'] }}
       zed-remote_tag: ${{ steps.release.outputs['zed-remote--tag_name'] }}
+      lares-bot_released: ${{ steps.release.outputs['lares-bot--release_created'] }}
+      lares-bot_version: ${{ steps.release.outputs['lares-bot--version'] }}
+      lares-bot_tag: ${{ steps.release.outputs['lares-bot--tag_name'] }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
@@ -311,7 +322,7 @@ jobs:
     needs: [release-please, build-kirocrew, build-zed-remote]
     if: |
       always() &&
-      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success')
+      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success' || needs.release-please.outputs.lares-bot_released == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -325,6 +336,8 @@ jobs:
           KIROCREW_VERSION: ${{ needs.release-please.outputs.kirocrew_version }}
           ZED_REMOTE_RELEASED: ${{ needs.release-please.outputs.zed-remote_released }}
           ZED_REMOTE_VERSION: ${{ needs.release-please.outputs.zed-remote_version }}
+          LARES_BOT_RELEASED: ${{ needs.release-please.outputs.lares-bot_released }}
+          LARES_BOT_VERSION: ${{ needs.release-please.outputs.lares-bot_version }}
         run: |
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           updated=false
@@ -344,6 +357,13 @@ jobs:
             sed -i "s|^image: .*|image: ${image}|" "zed-remote/config.yaml"
             git add "zed-remote/config.yaml"
             echo "✓ Updated zed-remote to v${ZED_REMOTE_VERSION}"
+            updated=true
+          fi
+
+          if [ "${LARES_BOT_RELEASED}" = "true" ]; then
+            sed -i "s/^version: .*/version: ${LARES_BOT_VERSION}/" "lares-bot/config.yaml"
+            git add "lares-bot/config.yaml"
+            echo "✓ Updated lares-bot to v${LARES_BOT_VERSION}"
             updated=true
           fi
 
