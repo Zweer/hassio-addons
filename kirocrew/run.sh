@@ -205,6 +205,9 @@ try:
     cfg=json.load(open(f))
 except: cfg={}
 cfg.setdefault('knowledge',{})['embed_content_budget'] = 0
+# Disable warm pool — don't pre-spawn agent sessions (saves ~500MB RAM on RPi4)
+cfg.setdefault('session',{})['warm_pool_size'] = 0
+cfg['session']['pool_size'] = ${POOL_SIZE}
 json.dump(cfg,open(f,'w'),indent=2)
 "
 
