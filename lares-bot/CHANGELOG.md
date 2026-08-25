@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.2...lares-bot-v0.1.3) (2026-08-25)
+
+
+### Bug Fixes
+
+* **lares-bot:** add image field and CI build job ([dcae71f](https://github.com/Zweer/hassio-addons/commit/dcae71f439be3b5acbccd58060146f5bf6d733de))
+
 ## [0.1.2](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.1...lares-bot-v0.1.2) (2026-08-24)
 
 
