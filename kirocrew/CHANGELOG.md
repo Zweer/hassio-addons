@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.14](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.13...kirocrew-v0.2.14) (2026-08-25)
+
+
+### Bug Fixes
+
+* disable warm pool to prevent OOM on RPi4 ([54dffab](https://github.com/Zweer/hassio-addons/commit/54dffab5607c3e74a24ea232ea9a6ad761e7ab58))
+
 ## [0.2.13](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.12...kirocrew-v0.2.13) (2026-08-24)
 
 
