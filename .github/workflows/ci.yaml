@@ -253,6 +253,65 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   # ─────────────────────────────────────────────────────────────
+  # Build lares-bot — only when released
+  # ─────────────────────────────────────────────────────────────
+  build-lares-bot:
+    name: Build lares-bot (${{ matrix.arch }})
+    needs: release-please
+    if: needs.release-please.outputs.lares-bot_released == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [aarch64, amd64]
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: amd64
+            platform: linux/amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set metadata
+        id: meta
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: lares-bot
+          file: lares-bot/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-lares-bot:${{ needs.release-please.outputs.lares-bot_version }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-lares-bot:latest
+          build-args: |
+            BUILD_VERSION=${{ needs.release-please.outputs.lares-bot_version }}
+            BUILD_ARCH=${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Lares Bot HA Addon
+            org.opencontainers.image.version=${{ needs.release-please.outputs.lares-bot_version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  # ─────────────────────────────────────────────────────────────
   # Build (manual) — workflow_dispatch with force_build
   # ─────────────────────────────────────────────────────────────
   build-manual:
@@ -319,10 +378,10 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   update-config:
     name: Update config
-    needs: [release-please, build-kirocrew, build-zed-remote]
+    needs: [release-please, build-kirocrew, build-zed-remote, build-lares-bot]
     if: |
       always() &&
-      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success' || needs.release-please.outputs.lares-bot_released == 'true')
+      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success' || needs.build-lares-bot.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -361,7 +420,9 @@ jobs:
           fi
 
           if [ "${LARES_BOT_RELEASED}" = "true" ]; then
+            image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-lares-bot"
             sed -i "s/^version: .*/version: ${LARES_BOT_VERSION}/" "lares-bot/config.yaml"
+            sed -i "s|^image: .*|image: ${image}|" "lares-bot/config.yaml"
             git add "lares-bot/config.yaml"
             echo "✓ Updated lares-bot to v${LARES_BOT_VERSION}"
             updated=true

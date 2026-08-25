@@ -41,3 +41,4 @@ schema:
   mqtt_password: password
 environment: {}
 stage: experimental
+image: ghcr.io/zweer/hassio-addons/{arch}-lares-bot
