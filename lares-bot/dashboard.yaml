@@ -46,13 +46,11 @@ views:
         color: blue
         tap_action:
           action: perform-action
-          perform_action: hassio.addon_stdin
+          perform_action: hassio.addon_restart
           data:
             addon: lares-bot
-            input:
-              command: rebuild
           confirmation:
-            text: "Pull latest code and rebuild?"
+            text: "Restart addon? (will pull latest code)"
 
     cards:
       # ── Alert: attacchi in arrivo (visibile SOLO se > 0) ───────
