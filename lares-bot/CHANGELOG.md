@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.4...lares-bot-v0.1.5) (2026-08-29)
+
+
+### Bug Fixes
+
+* **lares-bot:** add watchdog health endpoint and fix validation ([567aaaf](https://github.com/Zweer/hassio-addons/commit/567aaafe348a4a4cb7f75367344589824cb0fa57))
+
 ## [0.1.4](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.3...lares-bot-v0.1.4) (2026-08-29)
 
 
