@@ -1,4 +1,4 @@
-# Nic's Home Assistant Addons
+# Zweer's Home Assistant Addons
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
