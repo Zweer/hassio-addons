@@ -16,7 +16,9 @@ hassio_api: true
 map:
   - type: share
     read_only: false
-watchdog: null
+ports:
+  8099/tcp: null
+watchdog: http://[HOST]:[PORT:8099]/health
 options:
   lares_poll_interval: 20
   mqtt_host: core-mosquitto
