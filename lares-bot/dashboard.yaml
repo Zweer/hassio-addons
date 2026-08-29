@@ -40,6 +40,19 @@ views:
         entity: sensor.lares_bot_VILLAGE_wall_hp
         name: Walls
         color: orange
+      - type: entity
+        entity: sensor.lares_bot_VILLAGE_build_eta
+        name: Build ETA
+        color: blue
+        tap_action:
+          action: perform-action
+          perform_action: hassio.addon_stdin
+          data:
+            addon: lares-bot
+            input:
+              command: rebuild
+          confirmation:
+            text: "Pull latest code and rebuild?"
 
     cards:
       # ── Alert: attacchi in arrivo (visibile SOLO se > 0) ───────

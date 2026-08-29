@@ -48,11 +48,17 @@ build_bot() {
   rm -rf lares-bot vanilla-studio
 
   git clone --depth 1 "https://x-access-token:${GITHUB_PAT}@github.com/vanilla-studio/lares.git" vanilla-studio/lares
+  echo "[lares-bot] ✓ Cloned vanilla-studio/lares"
+
   git clone --depth 1 "https://x-access-token:${GITHUB_PAT}@github.com/Zweer/lares-bot.git" lares-bot
+  echo "[lares-bot] ✓ Cloned Zweer/lares-bot"
 
   cd /data/lares-bot
   npm ci
+  echo "[lares-bot] ✓ Dependencies installed"
+
   npx tsdown --no-dts
+  echo "[lares-bot] ✓ Bundle created"
 
   # Cleanup to save space
   rm -rf node_modules .git /data/vanilla-studio/.git
@@ -66,40 +72,50 @@ if [ ! -f /data/.built ]; then
   build_bot
 fi
 
-# ─── Listen for stdin commands (rebuild, etc.) ────────────────────────────────
+# ─── Signal file for rebuild requests ─────────────────────────────────────────
+REBUILD_FLAG="/tmp/.lares-bot-rebuild"
+rm -f "$REBUILD_FLAG"
+
+# ─── Listen for stdin commands ────────────────────────────────────────────────
 listen_stdin() {
   while read -r line; do
     cmd=$(echo "$line" | jq -r '.command // empty' 2>/dev/null || echo "")
     case "$cmd" in
       rebuild)
-        echo "[lares-bot] Rebuild requested via stdin..."
+        echo "[lares-bot] Rebuild requested — pulling and rebuilding..."
         rm -f /data/.built
         build_bot
-        # Restart the bot
+        echo "[lares-bot] Signaling bot restart..."
+        touch "$REBUILD_FLAG"
+        # Kill the running bot — main loop will restart it
         kill "$BOT_PID" 2>/dev/null || true
-        start_bot
         ;;
       *)
-        echo "[lares-bot] Unknown command: $line"
+        echo "[lares-bot] Unknown stdin command: $line"
         ;;
     esac
   done
 }
 
-# ─── Start the bot ───────────────────────────────────────────────────────────
-start_bot() {
+# ─── Main loop ────────────────────────────────────────────────────────────────
+BOT_PID=0
+
+listen_stdin &
+STDIN_PID=$!
+
+while true; do
   echo "[lares-bot] Starting — village=${LARES_VILLAGE_ID} poll=${LARES_POLL_INTERVAL}s"
   node /data/lares-bot/dist/index.mjs &
   BOT_PID=$!
-}
 
-start_bot
-listen_stdin &
-
-# Wait for bot process; restart if it crashes
-while true; do
+  # Wait for bot to exit (crash or killed by rebuild)
   wait "$BOT_PID" || true
-  echo "[lares-bot] Bot exited, restarting in 5s..."
-  sleep 5
-  start_bot
+
+  if [ -f "$REBUILD_FLAG" ]; then
+    rm -f "$REBUILD_FLAG"
+    echo "[lares-bot] Restarting after rebuild..."
+  else
+    echo "[lares-bot] Bot exited unexpectedly, restarting in 5s..."
+    sleep 5
+  fi
 done
