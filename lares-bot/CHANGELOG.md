@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.6...lares-bot-v0.1.7) (2026-08-29)
+
+
+### Bug Fixes
+
+* **lares-bot:** fix rebuild/restart flow and add rebuild badge ([7602c63](https://github.com/Zweer/hassio-addons/commit/7602c636d94cb909e76772adeeba493071259d5b))
+
 ## [0.1.6](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.5...lares-bot-v0.1.6) (2026-08-29)
 
 
