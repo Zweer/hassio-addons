@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.3...lares-bot-v0.1.4) (2026-08-29)
+
+
+### Bug Fixes
+
+* **lares-bot:** make user-configured fields optional in schema ([d693c49](https://github.com/Zweer/hassio-addons/commit/d693c497d125ffd6ad8c9f4255c419029a5c4a0c))
+
 ## [0.1.3](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.2...lares-bot-v0.1.3) (2026-08-25)
 
 
