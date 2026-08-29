@@ -120,13 +120,10 @@ jobs:
     outputs:
       kirocrew_released: ${{ steps.release.outputs['kirocrew--release_created'] }}
       kirocrew_version: ${{ steps.release.outputs['kirocrew--version'] }}
-      kirocrew_tag: ${{ steps.release.outputs['kirocrew--tag_name'] }}
       zed-remote_released: ${{ steps.release.outputs['zed-remote--release_created'] }}
       zed-remote_version: ${{ steps.release.outputs['zed-remote--version'] }}
-      zed-remote_tag: ${{ steps.release.outputs['zed-remote--tag_name'] }}
       lares-bot_released: ${{ steps.release.outputs['lares-bot--release_created'] }}
       lares-bot_version: ${{ steps.release.outputs['lares-bot--version'] }}
-      lares-bot_tag: ${{ steps.release.outputs['lares-bot--tag_name'] }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
@@ -372,67 +369,3 @@ jobs:
             org.opencontainers.image.title=${{ inputs.addon }} HA Addon
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-  # ─────────────────────────────────────────────────────────────
-  # Update config.yaml after release builds
-  # ─────────────────────────────────────────────────────────────
-  update-config:
-    name: Update config
-    needs: [release-please, build-kirocrew, build-zed-remote, build-lares-bot]
-    if: |
-      always() &&
-      (needs.build-kirocrew.result == 'success' || needs.build-zed-remote.result == 'success' || needs.build-lares-bot.result == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: main
-
-      - name: Update released addon configs
-        env:
-          KIROCREW_RELEASED: ${{ needs.release-please.outputs.kirocrew_released }}
-          KIROCREW_VERSION: ${{ needs.release-please.outputs.kirocrew_version }}
-          ZED_REMOTE_RELEASED: ${{ needs.release-please.outputs.zed-remote_released }}
-          ZED_REMOTE_VERSION: ${{ needs.release-please.outputs.zed-remote_version }}
-          LARES_BOT_RELEASED: ${{ needs.release-please.outputs.lares-bot_released }}
-          LARES_BOT_VERSION: ${{ needs.release-please.outputs.lares-bot_version }}
-        run: |
-          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          updated=false
-
-          if [ "${KIROCREW_RELEASED}" = "true" ]; then
-            image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-kirocrew"
-            sed -i "s/^version: .*/version: ${KIROCREW_VERSION}/" "kirocrew/config.yaml"
-            sed -i "s|^image: .*|image: ${image}|" "kirocrew/config.yaml"
-            git add "kirocrew/config.yaml"
-            echo "✓ Updated kirocrew to v${KIROCREW_VERSION}"
-            updated=true
-          fi
-
-          if [ "${ZED_REMOTE_RELEASED}" = "true" ]; then
-            image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-zed-remote"
-            sed -i "s/^version: .*/version: ${ZED_REMOTE_VERSION}/" "zed-remote/config.yaml"
-            sed -i "s|^image: .*|image: ${image}|" "zed-remote/config.yaml"
-            git add "zed-remote/config.yaml"
-            echo "✓ Updated zed-remote to v${ZED_REMOTE_VERSION}"
-            updated=true
-          fi
-
-          if [ "${LARES_BOT_RELEASED}" = "true" ]; then
-            image="${{ env.REGISTRY }}/${owner}/hassio-addons/{arch}-lares-bot"
-            sed -i "s/^version: .*/version: ${LARES_BOT_VERSION}/" "lares-bot/config.yaml"
-            sed -i "s|^image: .*|image: ${image}|" "lares-bot/config.yaml"
-            git add "lares-bot/config.yaml"
-            echo "✓ Updated lares-bot to v${LARES_BOT_VERSION}"
-            updated=true
-          fi
-
-          if [ "${updated}" = "true" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git diff --cached --quiet || {
-              git commit -m "ci: update addon image references [skip ci]"
-              git push
-            }
-          fi
