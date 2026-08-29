@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.7...lares-bot-v0.1.8) (2026-08-29)
+
+
+### Bug Fixes
+
+* **lares-bot:** simplify to fresh clone+build on every restart ([084f88c](https://github.com/Zweer/hassio-addons/commit/084f88ce6535b18aaa9221ce84ef9b9d10c21bbe))
+
 ## [0.1.7](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.6...lares-bot-v0.1.7) (2026-08-29)
 
 
