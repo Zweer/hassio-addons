@@ -18,27 +18,20 @@ map:
     read_only: false
 watchdog: null
 options:
-  github_pat: ''
-  lares_api_url: ''
-  lares_token: ''
-  lares_village_id: ''
   lares_poll_interval: 20
-  discord_webhook_url: ''
-  mqtt_host: core-mosquitto
+  mqtt_host: "core-mosquitto"
   mqtt_port: 1883
-  mqtt_user: ''
-  mqtt_password: ''
 schema:
-  github_pat: password
-  lares_api_url: url
-  lares_token: password
-  lares_village_id: str
+  github_pat: password?
+  lares_api_url: url?
+  lares_token: password?
+  lares_village_id: str?
   lares_poll_interval: int(5,120)
   discord_webhook_url: url?
-  mqtt_host: str
+  mqtt_host: str?
   mqtt_port: port
-  mqtt_user: str
-  mqtt_password: password
+  mqtt_user: str?
+  mqtt_password: password?
 environment: {}
 stage: experimental
 image: ghcr.io/zweer/hassio-addons/{arch}-lares-bot

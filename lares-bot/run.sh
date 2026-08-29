@@ -9,16 +9,16 @@ if [ ! -f "$CONFIG_PATH" ]; then
   exit 1
 fi
 
-GITHUB_PAT=$(jq -r '.github_pat' "$CONFIG_PATH")
+GITHUB_PAT=$(jq -r '.github_pat // empty' "$CONFIG_PATH")
 
 export LARES_API_URL
-LARES_API_URL=$(jq -r '.lares_api_url' "$CONFIG_PATH")
+LARES_API_URL=$(jq -r '.lares_api_url // empty' "$CONFIG_PATH")
 
 export LARES_TOKEN
-LARES_TOKEN=$(jq -r '.lares_token' "$CONFIG_PATH")
+LARES_TOKEN=$(jq -r '.lares_token // empty' "$CONFIG_PATH")
 
 export LARES_VILLAGE_ID
-LARES_VILLAGE_ID=$(jq -r '.lares_village_id' "$CONFIG_PATH")
+LARES_VILLAGE_ID=$(jq -r '.lares_village_id // empty' "$CONFIG_PATH")
 
 export LARES_POLL_INTERVAL
 LARES_POLL_INTERVAL=$(jq -r '.lares_poll_interval' "$CONFIG_PATH")
@@ -29,16 +29,16 @@ if [ -n "$DISCORD_WEBHOOK_URL" ]; then
 fi
 
 export MQTT_HOST
-MQTT_HOST=$(jq -r '.mqtt_host' "$CONFIG_PATH")
+MQTT_HOST=$(jq -r '.mqtt_host // empty' "$CONFIG_PATH")
 
 export MQTT_PORT
 MQTT_PORT=$(jq -r '.mqtt_port' "$CONFIG_PATH")
 
 export MQTT_USER
-MQTT_USER=$(jq -r '.mqtt_user' "$CONFIG_PATH")
+MQTT_USER=$(jq -r '.mqtt_user // empty' "$CONFIG_PATH")
 
 export MQTT_PASSWORD
-MQTT_PASSWORD=$(jq -r '.mqtt_password' "$CONFIG_PATH")
+MQTT_PASSWORD=$(jq -r '.mqtt_password // empty' "$CONFIG_PATH")
 
 # ─── Build function ──────────────────────────────────────────────────────────
 build_bot() {

@@ -1,11 +1,11 @@
-ARG BUILD_FROM=node:20-slim
+ARG BUILD_FROM=node:24-slim
 FROM ${BUILD_FROM}
 
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 LABEL \
     io.hass.version="${BUILD_VERSION}" \
-    io.hass.type="addon" \
+    io.hass.type="app" \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.name="Lares Bot" \
     io.hass.description="Automated strategy bot for Lares"
