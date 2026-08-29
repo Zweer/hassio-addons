@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.5...lares-bot-v0.1.6) (2026-08-29)
+
+
+### Bug Fixes
+
+* **lares-bot:** add ca-certificates for git HTTPS clone ([0a21662](https://github.com/Zweer/hassio-addons/commit/0a21662a92f2c1fd0cf98c1165ad55c03e11f74e))
+
 ## [0.1.5](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.4...lares-bot-v0.1.5) (2026-08-29)
 
 
