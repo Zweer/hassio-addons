@@ -1,5 +1,5 @@
 name: Lares Bot
-version: 0.1.8
+version: 0.1.9
 slug: lares-bot
 description: >-
   Automated strategy bot for Lares. Runs 24/7 on your Home Assistant hardware,

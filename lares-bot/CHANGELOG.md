@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.8...lares-bot-v0.1.9) (2026-08-30)
+
+
+### Bug Fixes
+
+* use tsx instead of tsdown bundle ([13c0bce](https://github.com/Zweer/hassio-addons/commit/13c0bceabcbc6de666883354340d2f53e5800ff2))
+
 ## [0.1.8](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.7...lares-bot-v0.1.8) (2026-08-29)
 
 
