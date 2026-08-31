@@ -90,21 +90,21 @@ jobs:
           echo "✓ All shell scripts valid"
 
       - name: Lint Dockerfiles
-        uses: hadolint/hadolint-action@v3.4.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: "kirocrew/Dockerfile"
           failure-threshold: warning
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
       - name: Lint Dockerfiles (zed-remote)
-        uses: hadolint/hadolint-action@v3.4.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: "zed-remote/Dockerfile"
           failure-threshold: warning
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
       - name: Lint Dockerfiles (lares-bot)
-        uses: hadolint/hadolint-action@v3.4.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: "lares-bot/Dockerfile"
           failure-threshold: warning
