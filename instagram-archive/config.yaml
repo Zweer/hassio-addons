@@ -1,5 +1,5 @@
 name: Instagram Archive
-version: 0.1.0
+version: 0.1.1
 slug: instagram-archive
 description: >-
   Daily Instagram feed archiver. Uses a real (headful) browser to download the
