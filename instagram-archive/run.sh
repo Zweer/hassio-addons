@@ -29,6 +29,9 @@ read_hassio() {
 
   export RANDOMIZE_DELAY
   RANDOMIZE_DELAY=$(jq -r '.randomize_delay // true' "$HASSIO_CONFIG")
+
+  export NOVNC_PASSWORD
+  NOVNC_PASSWORD=$(jq -r '.novnc_password // empty' "$HASSIO_CONFIG")
 }
 
 read_local() {
@@ -80,8 +83,14 @@ for _ in $(seq 1 30); do
 done
 
 echo "[instagram-archive] Starting x11vnc on :${VNC_PORT}..."
-x11vnc -display "$DISPLAY" -rfbport "$VNC_PORT" -forever -shared -nopw -quiet -bg >/dev/null 2>&1 || \
-  x11vnc -display "$DISPLAY" -rfbport "$VNC_PORT" -forever -shared -nopw -quiet &
+X11VNC_AUTH_ARGS=(-nopw)
+if [ -n "${NOVNC_PASSWORD:-}" ]; then
+  VNC_PASSWD_FILE="/data/.vncpasswd"
+  x11vnc -storepasswd "$NOVNC_PASSWORD" "$VNC_PASSWD_FILE" >/dev/null 2>&1
+  X11VNC_AUTH_ARGS=(-rfbauth "$VNC_PASSWD_FILE")
+  echo "[instagram-archive] noVNC password protection enabled."
+fi
+x11vnc -display "$DISPLAY" -rfbport "$VNC_PORT" -forever -shared "${X11VNC_AUTH_ARGS[@]}" -quiet &
 X11VNC_PID=$!
 
 # noVNC via websockify. HA ingress proxies to this port.

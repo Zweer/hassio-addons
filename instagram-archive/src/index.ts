@@ -54,7 +54,15 @@ async function checkChallengeDuringScrape(page: Page, config: Config): Promise<v
 
 /**
  * Phase 1: download all posts newer than the newest we already have.
- * Returns the number downloaded and the newest post seen (to update state).
+ *
+ * Pinned-post safe: we compare by `taken_at` timestamp, never by list order,
+ * because pinned posts appear at the top of the feed regardless of their date.
+ * We keep paging until we've seen a full page whose posts are all older than
+ * our known newest timestamp (plus a small page margin), rather than stopping
+ * at the first already-seen post.
+ *
+ * Returns the number downloaded and the newest NON-pinned timestamp/shortcode
+ * seen, used to advance the "newest" edge.
  */
 async function scrapeNew(
   page: Page,
@@ -62,52 +70,87 @@ async function scrapeNew(
   userId: string,
   accountDir: string,
   state: AccountState,
-): Promise<{ downloaded: number; newest: Post | null }> {
+): Promise<{ downloaded: number; newestShortcode: string | null; newestTs: number }> {
   let downloaded = 0;
-  let newest: Post | null = null;
   let maxId: string | null = null;
-  let reachedKnown = false;
 
-  while (!reachedKnown) {
+  // The timestamp boundary of what we already have (0 = fresh account).
+  const knownNewestTs = state.newestScrapedTimestamp
+    ? Math.floor(new Date(state.newestScrapedTimestamp).getTime() / 1000)
+    : 0;
+
+  let newestShortcode: string | null = state.newestScrapedShortcode;
+  let newestTs = knownNewestTs;
+
+  // Fresh account (no prior newest edge): only take the first page of recent
+  // posts here; the rest of the history is handled gradually by the backfill
+  // phase to spread activity and reduce ban risk.
+  const freshAccount = knownNewestTs === 0;
+
+  // Safety: keep scanning a couple of pages past the boundary to be robust to
+  // pinned posts sitting on top of the chronological stream.
+  let pagesWithoutNew = 0;
+  const MAX_EMPTY_PAGES = 2;
+
+  while (true) {
     await checkChallengeDuringScrape(page, config);
     const feed = await fetchFeedPage(page, userId, FEED_PAGE_SIZE, maxId);
     if (feed.posts.length === 0) break;
 
-    for (const post of feed.posts) {
-      if (!newest) newest = post; // first post is the newest overall
+    let newInThisPage = 0;
 
-      // Stop as soon as we reach a post we already archived.
-      if (
-        (state.newestScrapedShortcode && post.shortcode === state.newestScrapedShortcode) ||
-        (await postExists(accountDir, post))
-      ) {
-        reachedKnown = true;
-        break;
+    for (const post of feed.posts) {
+      // Track the newest edge from NON-pinned posts only.
+      if (!post.pinned && post.takenAt > newestTs) {
+        newestTs = post.takenAt;
+        newestShortcode = post.shortcode;
       }
+
+      const isNew = post.takenAt > knownNewestTs;
+      // Skip posts we already have (older or equal to boundary), unless a
+      // pinned old post we happen to be missing — download if not present.
+      if (!isNew && !post.pinned) continue;
+
+      if (await postExists(accountDir, post)) continue;
 
       try {
         if (await downloadPost(accountDir, post)) {
           downloaded += 1;
-          log.info(`  [new] downloaded ${post.shortcode} (${post.images.length} img)`);
+          if (isNew) newInThisPage += 1;
+          log.info(`  [new${post.pinned ? '/pinned' : ''}] downloaded ${post.shortcode} (${post.images.length} img)`);
         }
       } catch {
-        // download.ts already logged; continue with next post
+        // download.ts already logged; continue
       }
       await humanDelay(config.randomizeDelay);
     }
 
-    if (reachedKnown || !feed.moreAvailable || !feed.nextMaxId) break;
+    // On a fresh account, stop after the first page — backfill takes over.
+    if (freshAccount) break;
+
+    if (newInThisPage === 0) {
+      pagesWithoutNew += 1;
+      if (pagesWithoutNew >= MAX_EMPTY_PAGES) break;
+    } else {
+      pagesWithoutNew = 0;
+    }
+
+    if (!feed.moreAvailable || !feed.nextMaxId) break;
     maxId = feed.nextMaxId;
     await humanDelay(config.randomizeDelay, 1500, 3500);
   }
 
-  return { downloaded, newest };
+  return { downloaded, newestShortcode, newestTs };
 }
 
 /**
- * Phase 2: backfill a bounded batch of older posts, starting from our oldest
- * edge. Updates state's oldest edge and sets backfillComplete when we reach
- * the end of the profile.
+ * Phase 2: backfill a bounded batch of older posts.
+ *
+ * Pinned-post safe: we page to the end using the API's own `max_id` cursor
+ * (chronological, unaffected by pinning) and only download posts strictly
+ * OLDER than our current oldest timestamp. The oldest edge advances using the
+ * minimum NON-pinned timestamp we download. `complete` is set when the API
+ * reports no more pages.
  */
 async function scrapeBackfill(
   page: Page,
@@ -115,15 +158,18 @@ async function scrapeBackfill(
   userId: string,
   accountDir: string,
   state: AccountState,
-): Promise<{ downloaded: number; oldest: Post | null; complete: boolean }> {
+): Promise<{ downloaded: number; oldestShortcode: string | null; oldestTs: number | null; complete: boolean }> {
   let downloaded = 0;
-  let oldest: Post | null = null;
   let complete = false;
 
-  // Walk from the top until we pass our known oldest post, then start
-  // downloading older ones up to the batch size.
+  const knownOldestTs = state.oldestScrapedTimestamp
+    ? Math.floor(new Date(state.oldestScrapedTimestamp).getTime() / 1000)
+    : Number.POSITIVE_INFINITY; // fresh account → everything is "older"
+
+  let oldestShortcode: string | null = state.oldestScrapedShortcode;
+  let oldestTs: number | null = Number.isFinite(knownOldestTs) ? knownOldestTs : null;
+
   let maxId: string | null = null;
-  let passedOldest = state.oldestScrapedShortcode === null; // if no edge yet, start immediately
 
   while (downloaded < config.backfillBatchSize) {
     await checkChallengeDuringScrape(page, config);
@@ -134,23 +180,24 @@ async function scrapeBackfill(
     }
 
     for (const post of feed.posts) {
-      if (!passedOldest) {
-        // Skip forward until we cross our current oldest edge.
-        if (post.shortcode === state.oldestScrapedShortcode) {
-          passedOldest = true;
-        }
-        continue;
+      // Only backfill posts strictly older than our current oldest edge.
+      // Pinned posts (which can appear anywhere) are ignored here to avoid
+      // corrupting the oldest edge; they're handled by Phase 1.
+      if (post.pinned) continue;
+      if (post.takenAt >= knownOldestTs) continue;
+
+      // Advance the oldest edge regardless of whether we (re)downloaded it.
+      if (oldestTs === null || post.takenAt < oldestTs) {
+        oldestTs = post.takenAt;
+        oldestShortcode = post.shortcode;
       }
 
-      // Now we're in "older than what we have" territory.
+      if (await postExists(accountDir, post)) continue;
+
       try {
         if (await downloadPost(accountDir, post)) {
           downloaded += 1;
-          oldest = post; // keep advancing the oldest edge
           log.info(`  [backfill] downloaded ${post.shortcode} (${post.images.length} img)`);
-        } else {
-          // already exists — still advance the edge
-          oldest = post;
         }
       } catch {
         // continue
@@ -168,7 +215,7 @@ async function scrapeBackfill(
     await humanDelay(config.randomizeDelay, 1500, 3500);
   }
 
-  return { downloaded, oldest, complete };
+  return { downloaded, oldestShortcode, oldestTs, complete };
 }
 
 async function processAccount(page: Page, config: Config, account: string): Promise<void> {
@@ -186,20 +233,13 @@ async function processAccount(page: Page, config: Config, account: string): Prom
 
   await humanDelay(config.randomizeDelay, 1500, 3000);
 
-  // Phase 1 — new posts
-  const { downloaded: newCount, newest } = await scrapeNew(page, config, userId, accountDir, state);
-  if (newest) {
-    state.newestScrapedShortcode = newest.shortcode;
-    state.newestScrapedTimestamp = new Date(newest.takenAt * 1000).toISOString();
+  // Phase 1 — new posts (timestamp-based, pinned-safe)
+  const phase1 = await scrapeNew(page, config, userId, accountDir, state);
+  if (phase1.newestShortcode && phase1.newestTs > 0) {
+    state.newestScrapedShortcode = phase1.newestShortcode;
+    state.newestScrapedTimestamp = new Date(phase1.newestTs * 1000).toISOString();
   }
-  state.totalDownloaded += newCount;
-
-  // On a fresh account (no oldest edge yet), the newest post becomes the top
-  // of our archive; backfill then walks downward from there.
-  if (!state.oldestScrapedShortcode && newest) {
-    state.oldestScrapedShortcode = newest.shortcode;
-    state.oldestScrapedTimestamp = state.newestScrapedTimestamp;
-  }
+  state.totalDownloaded += phase1.downloaded;
 
   // Phase 2 — backfill (only if history isn't complete)
   let backfillCount = 0;
@@ -207,9 +247,9 @@ async function processAccount(page: Page, config: Config, account: string): Prom
     const res = await scrapeBackfill(page, config, userId, accountDir, state);
     backfillCount = res.downloaded;
     state.totalDownloaded += backfillCount;
-    if (res.oldest) {
-      state.oldestScrapedShortcode = res.oldest.shortcode;
-      state.oldestScrapedTimestamp = new Date(res.oldest.takenAt * 1000).toISOString();
+    if (res.oldestShortcode && res.oldestTs !== null) {
+      state.oldestScrapedShortcode = res.oldestShortcode;
+      state.oldestScrapedTimestamp = new Date(res.oldestTs * 1000).toISOString();
     }
     if (res.complete) {
       state.backfillComplete = true;
@@ -220,7 +260,7 @@ async function processAccount(page: Page, config: Config, account: string): Prom
   state.lastRun = new Date().toISOString();
   await saveState(accountDir, state);
 
-  log.info(`  @${account}: +${newCount} new, +${backfillCount} backfill (total ${state.totalDownloaded})`);
+  log.info(`  @${account}: +${phase1.downloaded} new, +${backfillCount} backfill (total ${state.totalDownloaded})`);
 }
 
 async function main(): Promise<void> {

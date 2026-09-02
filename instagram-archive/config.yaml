@@ -33,5 +33,6 @@ schema:
   challenge_timeout: int(30,600)
   backfill_batch_size: int(1,200)
   randomize_delay: bool
+  novnc_password: password?
 image: ghcr.io/zweer/hassio-addons/{arch}-instagram-archive
 stage: experimental

@@ -61,6 +61,7 @@ don't re-scroll the entire profile.
 | `challenge_timeout` | Seconds to wait for you to solve a challenge via noVNC before aborting | `180` |
 | `backfill_batch_size` | Max historical posts to fetch per account per run | `30` |
 | `randomize_delay` | Randomize delays between actions to look more human | `true` |
+| `novnc_password` | Optional password for the noVNC session (extra layer on top of HA ingress auth) | — |
 
 Example:
 
@@ -74,6 +75,7 @@ discord_webhook: https://discord.com/api/webhooks/...
 challenge_timeout: 180
 backfill_batch_size: 30
 randomize_delay: true
+# novnc_password: "optional-extra-password"
 ```
 
 ## First run & challenges
@@ -115,6 +117,10 @@ automation/event.
 ## Notes & limitations
 
 - **Feed posts only** — no stories, no reels, no tagged posts.
+- **Pinned posts** are handled correctly: the scraper compares posts by their
+  real timestamp (`taken_at`), not by their position in the feed, so pinned
+  posts at the top of a profile don't stop the scan or corrupt the "how far
+  I've got" bookmarks. Pinned posts are still downloaded.
 - **Private accounts**: the logged-in account must follow them to see posts.
 - Instagram changes its internal endpoints over time; if scraping stops
   working, the addon may need an update.

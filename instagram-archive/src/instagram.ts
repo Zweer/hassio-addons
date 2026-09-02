@@ -35,6 +35,12 @@ export interface Post {
   caption: string;
   /** One entry per image. Videos are represented by their thumbnail. */
   images: MediaImage[];
+  /**
+   * Whether Instagram surfaced this as a pinned post. Best-effort: the field
+   * is not guaranteed to exist. NEVER use this to compute date edges — pinned
+   * posts appear at the top of the feed regardless of their actual date.
+   */
+  pinned: boolean;
 }
 
 /** Thrown when a challenge/checkpoint is detected and not resolved in time. */
@@ -213,6 +219,9 @@ interface FeedItem extends FeedMediaNode {
   taken_at: number;
   caption?: { text?: string } | null;
   carousel_media?: FeedMediaNode[];
+  /** Pinned markers (best-effort — shape varies across IG versions). */
+  timeline_pinned_user_ids?: unknown[];
+  is_pinned?: boolean;
 }
 
 interface FeedApiResponse {
@@ -271,7 +280,11 @@ export async function fetchFeedPage(
       collect(item);
     }
 
-    return { shortcode, takenAt, caption, images };
+    const pinned =
+      item.is_pinned === true ||
+      (Array.isArray(item.timeline_pinned_user_ids) && item.timeline_pinned_user_ids.length > 0);
+
+    return { shortcode, takenAt, caption, images, pinned };
   });
 
   return {
