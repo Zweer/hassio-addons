@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "playwright-core": "1.55.0",
+    "playwright-core": "1.62.1",
     "tsx": "4.20.4"
   },
   "devDependencies": {
