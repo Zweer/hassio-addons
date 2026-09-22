@@ -34,16 +34,6 @@ Automated strategy bot for Lares running 24/7 on your HA hardware.
 - Discord webhook notifications
 - Local build — no CI needed, just `./deploy.sh`
 
-### 📸 [Instagram Archive](instagram-archive/)
-
-Daily archiver for Instagram feed posts of the accounts you choose.
-
-- Headful Chromium scraper (Playwright) — calls Instagram's own JSON endpoints
-- noVNC session via ingress to solve login challenges live
-- Two-phase scrape: new posts + gradual historical backfill
-- Downloads into a folder tree on `/share/instagram` (one folder per post, carousels supported)
-- Discord webhook notifications; run-once, scheduled from HA
-
 ### 📚 [Suwayomi](suwayomi/)
 
 Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayomi/Suwayomi-Server)) running on your HA hardware.

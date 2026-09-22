@@ -27,26 +27,13 @@ updates:
       - "docker"
 
   - package-ecosystem: "docker"
-    directory: "/instagram-archive"
+    directory: "/suwayomi"
     schedule:
       interval: "weekly"
       day: "monday"
     commit-message:
-      prefix: "fix(instagram-archive)"
+      prefix: "fix(suwayomi)"
       include: "scope"
     labels:
       - "dependencies"
       - "docker"
-
-  # npm (instagram-archive scraper dependencies)
-  - package-ecosystem: "npm"
-    directory: "/instagram-archive"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    commit-message:
-      prefix: "fix(instagram-archive)"
-      include: "scope"
-    labels:
-      - "dependencies"
-      - "npm"
