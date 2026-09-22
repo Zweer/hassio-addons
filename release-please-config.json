@@ -43,6 +43,13 @@
       "extra-files": [
         "config.yaml"
       ]
+    },
+    "suwayomi": {
+      "component": "suwayomi",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "config.yaml"
+      ]
     }
   }
 }

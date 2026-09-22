@@ -44,6 +44,16 @@ Daily archiver for Instagram feed posts of the accounts you choose.
 - Downloads into a folder tree on `/share/instagram` (one folder per post, carousels supported)
 - Discord webhook notifications; run-once, scheduled from HA
 
+### 📚 [Suwayomi](suwayomi/)
+
+Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayomi/Suwayomi-Server)) running on your HA hardware.
+
+- Runs Mihon (Tachiyomi) extensions, reads from any browser via ingress
+- Readable from Mihon/Sorayomi clients locally or remotely (Cloudflare Tunnel)
+- Optional authentication (basic/simple/ui login) for safe remote access
+- Downloads into `/share/suwayomi`; library and settings persisted in `/data`
+- Based on the official upstream Docker image (arm64 + amd64)
+
 ## Installation
 
 Add this repository to your Home Assistant addon store:

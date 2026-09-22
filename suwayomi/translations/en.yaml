@@ -1,0 +1,42 @@
+configuration:
+  auth_mode:
+    name: Authentication Mode
+    description: >-
+      How clients authenticate with the server. Use "basic_auth" (recommended)
+      for Mihon/remote access, "none" if you only read via the HA sidebar, or
+      "simple_login"/"ui_login" for the alternative login flows.
+  auth_username:
+    name: Username
+    description: >-
+      Username required to log in (used by all auth modes except "none").
+  auth_password:
+    name: Password
+    description: >-
+      Password required to log in (used by all auth modes except "none").
+  download_as_cbz:
+    name: Download as CBZ
+    description: >-
+      Save downloaded chapters as CBZ archives instead of loose image folders.
+  kcef_enabled:
+    name: Enable KCEF WebView
+    description: >-
+      Enable the Chromium-based WebView used by some sources to bypass
+      Cloudflare. Memory-hungry — keep off on low-RAM devices like the RPi4.
+  web_ui_channel:
+    name: WebUI Channel
+    description: >-
+      Which WebUI version to serve: BUNDLED (shipped with the server), STABLE,
+      or PREVIEW (latest, potentially buggy).
+  extension_repos:
+    name: Extension Repositories
+    description: >-
+      List of Mihon-compatible extension repository URLs to load
+      (e.g. https://.../index.min.json).
+  socks_proxy_host:
+    name: SOCKS5 Proxy Host
+    description: >-
+      Optional SOCKS5 proxy host for source/network traffic.
+  socks_proxy_port:
+    name: SOCKS5 Proxy Port
+    description: >-
+      Optional SOCKS5 proxy port (required if a proxy host is set).

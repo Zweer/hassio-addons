@@ -1,0 +1,49 @@
+name: Suwayomi
+version: 0.1.0
+slug: suwayomi
+description: >-
+  Self-hosted manga reader server (Suwayomi/Tachidesk). Runs Mihon (Tachiyomi)
+  extensions, downloads to /share, and is readable from any browser via ingress
+  or from Mihon/Sorayomi clients remotely (e.g. via Cloudflare Tunnel).
+url: https://github.com/Zweer/hassio-addons
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 4567
+panel_icon: mdi:book-open-page-variant
+panel_title: Suwayomi
+map:
+  - type: share
+    read_only: false
+watchdog: http://[HOST]:[PORT:4567]/api/graphql
+timeout: 120
+options:
+  auth_mode: basic_auth
+  download_as_cbz: true
+  kcef_enabled: false
+  web_ui_channel: STABLE
+  extension_repos: []
+schema:
+  auth_mode: list(none|basic_auth|simple_login|ui_login)
+  auth_username: str?
+  auth_password: password?
+  download_as_cbz: bool
+  kcef_enabled: bool
+  web_ui_channel: list(BUNDLED|STABLE|PREVIEW)
+  extension_repos:
+    - url
+  socks_proxy_host: str?
+  socks_proxy_port: port?
+environment: {}
+backup: hot
+backup_exclude:
+  - '*.log'
+  - logs/
+  - cache/
+  - bin/kcef/
+stage: experimental
+image: ghcr.io/zweer/hassio-addons/{arch}-suwayomi
