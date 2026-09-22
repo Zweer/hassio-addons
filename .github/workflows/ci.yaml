@@ -113,7 +113,7 @@ jobs:
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
       - name: Lint Dockerfiles (instagram-archive)
-        uses: hadolint/hadolint-action@v3.4.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: "instagram-archive/Dockerfile"
           failure-threshold: warning
