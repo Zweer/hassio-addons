@@ -1,0 +1,101 @@
+# =============================================================================
+# Suwayomi dashboard (example)
+# =============================================================================
+# A Lovelace view with summary badges on top and history graphs below.
+# Requires the sensors from ha-sensors.yaml.
+#
+# HOW TO USE
+#   Option A (quick): Dashboards → (your dashboard) → Edit → ⋮ → "Raw
+#   configuration editor" → paste this `views:` block (merge with existing).
+#   Option B: add as a new view via the UI, then paste individual cards.
+#
+# The graphs use the built-in `history-graph` card (no HACS needed). If you
+# have ApexCharts (HACS), see the commented example at the bottom for nicer
+# time-series with multiple series on one chart.
+# =============================================================================
+
+title: Manga
+views:
+  - title: Suwayomi
+    path: suwayomi
+    icon: mdi:book-open-page-variant
+    # ── Summary badges (top strip) ──────────────────────────────────────────
+    badges:
+      - entity: sensor.suwayomi_library
+      - entity: sensor.suwayomi_unread
+      - entity: sensor.suwayomi_downloads_queue
+      - entity: sensor.suwayomi_downloader_state
+      - entity: sensor.suwayomi_version
+    cards:
+      # ── Row of glance tiles ────────────────────────────────────────────────
+      - type: glance
+        title: Overview
+        columns: 3
+        entities:
+          - entity: sensor.suwayomi_library
+            name: Library
+          - entity: sensor.suwayomi_unread
+            name: Unread
+          - entity: sensor.suwayomi_downloaded
+            name: Downloaded
+          - entity: sensor.suwayomi_categories
+            name: Categories
+          - entity: sensor.suwayomi_sources
+            name: Sources
+          - entity: sensor.suwayomi_downloads_queue
+            name: In queue
+
+      # ── Currently downloading (from queue attributes) ──────────────────────
+      - type: entities
+        title: Downloader
+        entities:
+          - entity: sensor.suwayomi_downloader_state
+            name: State
+          - entity: sensor.suwayomi_active_download
+            name: Active
+          - entity: sensor.suwayomi_downloads_queue
+            name: Queue length
+          - entity: sensor.suwayomi_last_library_update
+            name: Last library update
+          - entity: sensor.suwayomi_library_updating
+            name: Updating now
+
+      # ── History graphs (time series) ───────────────────────────────────────
+      - type: history-graph
+        title: Library growth
+        hours_to_show: 720   # ~30 days
+        entities:
+          - entity: sensor.suwayomi_library
+          - entity: sensor.suwayomi_downloaded
+
+      - type: history-graph
+        title: Unread backlog
+        hours_to_show: 168   # 7 days
+        entities:
+          - entity: sensor.suwayomi_unread
+
+      - type: history-graph
+        title: Download queue
+        hours_to_show: 24
+        entities:
+          - entity: sensor.suwayomi_downloads_queue
+
+# =============================================================================
+# OPTIONAL — ApexCharts (HACS) version of the "Library growth" graph.
+# Nicer multi-series time chart. Paste as a card if you have apexcharts-card.
+# =============================================================================
+# - type: custom:apexcharts-card
+#   header:
+#     show: true
+#     title: Library over time
+#   graph_span: 30d
+#   series:
+#     - entity: sensor.suwayomi_library
+#       name: Library
+#       type: line
+#     - entity: sensor.suwayomi_downloaded
+#       name: Downloaded
+#       type: line
+#     - entity: sensor.suwayomi_unread
+#       name: Unread
+#       type: area

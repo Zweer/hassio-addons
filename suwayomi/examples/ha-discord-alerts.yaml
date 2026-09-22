@@ -1,0 +1,119 @@
+# =============================================================================
+# Suwayomi → Discord alerts (via Home Assistant)
+# =============================================================================
+# Suwayomi has NO native webhooks/notifications. Instead, Home Assistant watches
+# the metric sensors (from ha-sensors.yaml) and posts to a Discord webhook on
+# noteworthy events.
+#
+# WHAT CAN BE ALERTED (observable from outside the server):
+#   - Server unreachable        → sensors go `unavailable` (addon down/crash)
+#   - Downloader unexpectedly stopped while items are queued
+#   - New chapters downloaded   → `Suwayomi Downloaded` increased
+#   - Library not updated for too long (stale "search new chapters")
+#
+# WHAT CANNOT be alerted reliably: individual per-chapter download errors
+# (e.g. a single HTTP 429). Suwayomi does not expose those via its API; the
+# only source would be log scraping, which is fragile and intentionally omitted.
+#
+# ── SETUP ────────────────────────────────────────────────────────────────────
+# 1. Create a Discord webhook: Server Settings → Integrations → Webhooks → New.
+#    Put the URL in secrets.yaml:
+#       suwayomi_discord_webhook: https://discord.com/api/webhooks/xxx/yyy
+# 2. Add the rest_command + automations below to configuration.yaml
+#    (merge with existing `rest_command:` / `automation:` blocks if present).
+# 3. Reload: Developer Tools → YAML → "REST commands" and "Automations",
+#    or restart HA.
+# =============================================================================
+
+rest_command:
+  suwayomi_discord:
+    url: !secret suwayomi_discord_webhook
+    method: POST
+    content_type: "application/json"
+    payload: '{"content": {{ message | to_json }}}'
+
+# =============================================================================
+automation:
+  # --- Server went unreachable (addon down / crashed) ------------------------
+  - id: suwayomi_alert_server_down
+    alias: "Suwayomi: alert when server unreachable"
+    trigger:
+      - trigger: state
+        entity_id: sensor.suwayomi_downloader_state
+        to: "unavailable"
+        for: "00:02:00"   # debounce restarts/updates
+    action:
+      - action: rest_command.suwayomi_discord
+        data:
+          message: "⚠️ **Suwayomi** is unreachable (addon down or crashed) since {{ now().strftime('%H:%M') }}."
+
+  - id: suwayomi_alert_server_back
+    alias: "Suwayomi: alert when server back online"
+    trigger:
+      - trigger: state
+        entity_id: sensor.suwayomi_downloader_state
+        from: "unavailable"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] }}"
+    action:
+      - action: rest_command.suwayomi_discord
+        data:
+          message: "✅ **Suwayomi** is back online."
+
+  # --- Downloader stopped while there is still a queue -----------------------
+  - id: suwayomi_alert_downloader_stalled
+    alias: "Suwayomi: alert when downloader stalled with pending queue"
+    trigger:
+      - trigger: state
+        entity_id: sensor.suwayomi_downloader_state
+        to: "STOPPED"
+        for: "00:05:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.suwayomi_downloads_queue
+        above: 0
+    action:
+      - action: rest_command.suwayomi_discord
+        data:
+          message: >-
+            ⏸️ **Suwayomi** downloader is STOPPED but
+            {{ states('sensor.suwayomi_downloads_queue') }} item(s) are still queued.
+
+  # --- New chapters downloaded (count increased) -----------------------------
+  - id: suwayomi_alert_new_downloads
+    alias: "Suwayomi: notify on newly downloaded chapters"
+    trigger:
+      - trigger: state
+        entity_id: sensor.suwayomi_downloaded
+    condition:
+      # Only when the number actually increased (ignore restarts / unknown).
+      - condition: template
+        value_template: >-
+          {{ trigger.from_state.state not in ['unknown','unavailable']
+             and trigger.to_state.state not in ['unknown','unavailable']
+             and (trigger.to_state.state | int(0)) > (trigger.from_state.state | int(0)) }}
+    action:
+      - action: rest_command.suwayomi_discord
+        data:
+          message: >-
+            📥 **Suwayomi** downloaded
+            {{ (trigger.to_state.state | int) - (trigger.from_state.state | int) }}
+            new chapter(s). Total downloaded: {{ trigger.to_state.state }}.
+
+  # --- Library not updated for too long (stale new-chapter search) -----------
+  - id: suwayomi_alert_stale_library
+    alias: "Suwayomi: alert when library update is stale"
+    trigger:
+      - trigger: template
+        # fires when last update is older than 48h
+        value_template: >-
+          {{ states('sensor.suwayomi_last_library_update') not in ['unknown','unavailable']
+             and (now() - states.sensor.suwayomi_last_library_update.state | as_datetime).total_seconds() > 172800 }}
+    action:
+      - action: rest_command.suwayomi_discord
+        data:
+          message: >-
+            🕒 **Suwayomi** library hasn't updated (searched for new chapters)
+            in over 48h. Last update:
+            {{ as_timestamp(states('sensor.suwayomi_last_library_update')) | timestamp_custom('%Y-%m-%d %H:%M') }}.

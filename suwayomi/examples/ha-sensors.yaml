@@ -1,0 +1,170 @@
+# =============================================================================
+# Suwayomi metrics for Home Assistant
+# =============================================================================
+# Query the Suwayomi GraphQL API (/api/graphql, POST) and expose the results as
+# HA sensors. No extra container/addon: these run inside HA Core.
+#
+# Syntax verified against the official HA "RESTful" integration docs
+# (Home Assistant 2026.9). Fields/queries verified against Suwayomi-Server
+# source (graphql/queries/*.kt).
+#
+# ── SETUP ────────────────────────────────────────────────────────────────────
+# 1. The resource URL uses `homeassistant` as host (the addon is reachable from
+#    HA Core at the host's internal name on the addon's port). If that does not
+#    resolve in your setup, replace `homeassistant` with the addon slug host
+#    (e.g. `<hash>-suwayomi`, shown in the addon logs) or the LAN IP.
+# 2. auth_mode: basic_auth → put credentials in secrets.yaml:
+#       suwayomi_user: youruser
+#       suwayomi_pass: yourpass
+#    If auth_mode: none, delete the `authentication/username/password` lines.
+# 3. Reload: Developer Tools → YAML → "REST entities", or restart HA.
+# =============================================================================
+
+rest:
+  # --- Poll 1: library counts + last update (every 5 min) --------------------
+  - resource: "http://homeassistant:4567/api/graphql"
+    method: POST
+    scan_interval: 300
+    timeout: 30
+    headers:
+      Content-Type: application/json
+    # Remove the next 3 lines if auth_mode: none
+    authentication: basic
+    username: !secret suwayomi_user
+    password: !secret suwayomi_pass
+    payload: >-
+      {"query":"{ library: mangas(condition:{inLibrary:true}){ totalCount }
+      unread: chapters(condition:{isRead:false,isDownloaded:false}){ totalCount }
+      downloaded: chapters(condition:{isDownloaded:true}){ totalCount }
+      categories { totalCount } sources { totalCount }
+      lastUpdateTimestamp { timestamp }
+      libraryUpdateStatus { jobsInfo { isRunning totalJobs finishedJobs } } }"}
+    sensor:
+      - name: "Suwayomi Library"
+        unique_id: suwayomi_library
+        value_template: "{{ value_json.data.library.totalCount }}"
+        unit_of_measurement: "manga"
+        state_class: measurement
+        icon: mdi:bookshelf
+
+      - name: "Suwayomi Unread"
+        unique_id: suwayomi_unread
+        value_template: "{{ value_json.data.unread.totalCount }}"
+        unit_of_measurement: "chapters"
+        state_class: measurement
+        icon: mdi:book-clock
+
+      - name: "Suwayomi Downloaded"
+        unique_id: suwayomi_downloaded
+        value_template: "{{ value_json.data.downloaded.totalCount }}"
+        unit_of_measurement: "chapters"
+        state_class: measurement
+        icon: mdi:download-box
+
+      - name: "Suwayomi Categories"
+        unique_id: suwayomi_categories
+        value_template: "{{ value_json.data.categories.totalCount }}"
+        unit_of_measurement: "categories"
+        state_class: measurement
+        icon: mdi:tag-multiple
+
+      - name: "Suwayomi Sources"
+        unique_id: suwayomi_sources
+        value_template: "{{ value_json.data.sources.totalCount }}"
+        unit_of_measurement: "sources"
+        state_class: measurement
+        icon: mdi:puzzle
+
+      # Last time the library "search for new chapters" (update) completed.
+      # timestamp is epoch milliseconds → convert to a HA timestamp device_class.
+      - name: "Suwayomi Last Library Update"
+        unique_id: suwayomi_last_library_update
+        device_class: timestamp
+        icon: mdi:update
+        value_template: >-
+          {% set ts = value_json.data.lastUpdateTimestamp.timestamp | int(0) %}
+          {% if ts > 0 %}
+            {{ (ts / 1000) | timestamp_utc }}
+          {% else %}
+            {{ None }}
+          {% endif %}
+
+      # Whether a library update ("search new chapters") is running right now.
+      - name: "Suwayomi Library Updating"
+        unique_id: suwayomi_library_updating
+        icon: mdi:progress-clock
+        value_template: >-
+          {{ value_json.data.libraryUpdateStatus.jobsInfo.isRunning }}
+        json_attributes_path: "$.data.libraryUpdateStatus.jobsInfo"
+        json_attributes:
+          - isRunning
+          - totalJobs
+          - finishedJobs
+
+  # --- Poll 2: download queue (every 30s) ------------------------------------
+  - resource: "http://homeassistant:4567/api/graphql"
+    method: POST
+    scan_interval: 30
+    timeout: 15
+    headers:
+      Content-Type: application/json
+    # Remove the next 3 lines if auth_mode: none
+    authentication: basic
+    username: !secret suwayomi_user
+    password: !secret suwayomi_pass
+    payload: >-
+      {"query":"{ downloadStatus { state queue { progress
+      chapter { name } manga { title } } } }"}
+    sensor:
+      - name: "Suwayomi Downloads Queue"
+        unique_id: suwayomi_downloads_queue
+        value_template: "{{ value_json.data.downloadStatus.queue | count }}"
+        unit_of_measurement: "items"
+        state_class: measurement
+        icon: mdi:download-multiple
+        json_attributes_path: "$.data.downloadStatus"
+        json_attributes:
+          - state
+          - queue
+
+      - name: "Suwayomi Downloader State"
+        unique_id: suwayomi_downloader_state
+        value_template: "{{ value_json.data.downloadStatus.state }}"
+        icon: mdi:download-network
+
+  # --- Poll 3: server version/about (hourly) ---------------------------------
+  - resource: "http://homeassistant:4567/api/v1/settings/about"
+    method: GET
+    scan_interval: 3600
+    timeout: 15
+    # Remove the next 3 lines if auth_mode: none
+    authentication: basic
+    username: !secret suwayomi_user
+    password: !secret suwayomi_pass
+    sensor:
+      - name: "Suwayomi Version"
+        unique_id: suwayomi_version
+        value_template: "{{ value_json.version | default('unknown') }}"
+        icon: mdi:information-outline
+        json_attributes:
+          - name
+          - version
+          - revision
+          - buildType
+          - buildTime
+
+# =============================================================================
+# TEMPLATE HELPERS (optional)
+# =============================================================================
+template:
+  - sensor:
+      - name: "Suwayomi Active Download"
+        unique_id: suwayomi_active_download
+        icon: mdi:progress-download
+        state: >-
+          {% set q = state_attr('sensor.suwayomi_downloads_queue','queue') %}
+          {% if q and q|length > 0 %}
+            {{ q[0].manga.title }} — {{ (q[0].progress * 100) | round(0) }}%
+          {% else %}
+            idle
+          {% endif %}
