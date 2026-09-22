@@ -46,7 +46,17 @@ jobs:
         run: |
           for f in $(find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v .git); do
             echo "Checking $f..."
-            python3 -c "import yaml; yaml.safe_load(open('$f'))" || exit 1
+            python3 -c "
+          import sys, yaml
+          # Home Assistant uses custom YAML tags (!secret, !include, ...) that are
+          # not valid in plain YAML. Register no-op constructors so example HA
+          # configs still get a real syntax check without crashing safe_load.
+          for tag in ['!secret', '!include', '!include_dir_list', '!include_dir_merge_list',
+                      '!include_dir_named', '!include_dir_merge_named', '!env_var', '!input']:
+              yaml.SafeLoader.add_constructor(tag, lambda loader, node: None)
+          yaml.SafeLoader.add_multi_constructor('!', lambda loader, suffix, node: None)
+          yaml.safe_load(open('$f'))
+          " || exit 1
           done
           echo "✓ All YAML files valid"
 
