@@ -19,7 +19,7 @@ panel_title: Suwayomi
 map:
   - type: share
     read_only: false
-watchdog: http://[HOST]:[PORT:4567]/api/graphql
+watchdog: http://[HOST]:[PORT:4567]/api/v1/settings/about
 timeout: 120
 options:
   auth_mode: basic_auth
