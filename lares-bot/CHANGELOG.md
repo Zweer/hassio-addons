@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.2.0...lares-bot-v0.2.1) (2026-09-23)
+
+
+### Features
+
+* **lares-bot:** add addon icon ([9c852d6](https://github.com/Zweer/hassio-addons/commit/9c852d60ffded845a3f683bbea84a4a45637db1e))
+
 ## [0.2.0](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.9...lares-bot-v0.2.0) (2026-09-23)
 
 
