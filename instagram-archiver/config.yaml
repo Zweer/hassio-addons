@@ -1,0 +1,33 @@
+name: Instagram Archiver
+version: 0.1.0
+slug: instagram-archiver
+description: >-
+  Archives posts (images, videos, carousels + captions) from public Instagram
+  profiles to /share, via the StoryNavigation mirror. Runs one pass per
+  invocation — trigger it once a day from a HA automation. Sends a Discord
+  summary of what was downloaded.
+url: https://github.com/Zweer/hassio-addons
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: manual
+init: false
+map:
+  - type: share
+    read_only: false
+options:
+  accounts: []
+  request_delay_ms: 1500
+  notify_empty: false
+schema:
+  accounts:
+    - str
+  discord_webhook_url: url?
+  request_delay_ms: int(0,60000)
+  notify_empty: bool
+  output_dir: str?
+  max_download_mb: int(1,500)?
+environment: {}
+stage: experimental
+image: ghcr.io/zweer/hassio-addons/{arch}-instagram-archiver
