@@ -5,6 +5,17 @@
 
 ### ⚠ BREAKING CHANGES
 
+* **lares-bot:** MQTT sensors and the HA dashboard are removed.
+
+### Features
+
+* **lares-bot:** reduce memory footprint (alpine, drop MQTT, cap heap) ([469b557](https://github.com/Zweer/hassio-addons/commit/469b5578edd615865aafc334e688077bd1d1e385))
+
+## [0.2.0](https://github.com/Zweer/hassio-addons/compare/lares-bot-v0.1.9...lares-bot-v0.2.0) (2026-09-23)
+
+
+### ⚠ BREAKING CHANGES
+
 * **lares-bot:** remove MQTT integration and HA sensor dashboard. The bot no longer publishes sensors to Home Assistant; the `mqtt_host`, `mqtt_port`, `mqtt_user` and `mqtt_password` options and `dashboard.yaml` have been removed. This cuts the runtime memory footprint (no `mqtt` dependency loaded).
 
 
