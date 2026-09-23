@@ -46,13 +46,16 @@ Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayom
 
 ### 🎮 [RomM](romm/)
 
-Self-hosted ROM library manager and in-browser player ([RomM](https://github.com/rommapp/romm)) running on your HA hardware.
+Self-hosted ROM library manager and in-browser player ([RomM](https://github.com/rommapp/romm)) running on your HA hardware — a "Plex for retro games".
 
-- Scans `/share/roms` (shared with your \*arr download flow), enriches with metadata/artwork (IGDB, ScreenScraper, MobyGames, ...)
-- Play PS1, N64, SNES, GBA, Mega Drive, PSP, Saturn and more from the browser (EmulatorJS)
-- Uses the existing MariaDB addon — no second database engine on the Pi
-- Optional metadata providers, emulation toggles, scheduled re-scans; tuned for RPi4 4GB
-- Reachable on your LAN or via Cloudflare Tunnel (no ingress); based on the official image (arm64 + amd64)
+- **Fits the \*arr flow:** search games in Prowlarr, send them to your existing download client, and drop them into `/share/roms`. RomM scans that folder, organizes by platform, and enriches each title with metadata and artwork.
+- **Play in the browser (EmulatorJS):** PS1, PSP, N64, NDS, GB/GBC/GBA, NES, SNES, Mega Drive/32X/CD, Master System, Game Gear, Saturn, Atari, and more — no client install. PS2/GameCube/Wii/Switch can be catalogued but not played in-browser.
+- **Metadata providers:** IGDB (primary), MobyGames, ScreenScraper, SteamGridDB, RetroAchievements and keyless Hasheous — all optional.
+- **Uses the existing MariaDB addon** (`core-mariadb`) — no second database engine wasting RAM on the Pi.
+- **Highly configurable:** per-player emulation toggles, scheduled/filesystem-triggered re-scans, kiosk mode, HTTPS-secure cookies; scan/web workers tuned to leave headroom for HA on an RPi4 4GB.
+- **Access:** LAN on a port you pick (no ingress — RomM's nginx serves from root), or remotely via Cloudflare Tunnel with secure cookies. Based on the official image (arm64 + amd64).
+
+See [`romm/DOCS.md`](romm/DOCS.md) for the full setup guide (MariaDB database, IGDB credentials, folder layout, Cloudflare).
 
 ## Installation
 
