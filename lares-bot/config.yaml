@@ -1,5 +1,5 @@
 name: Lares Bot
-version: 0.1.9
+version: 0.2.0
 slug: lares-bot
 description: >-
   Automated strategy bot for Lares. Runs 24/7 on your Home Assistant hardware,
@@ -20,8 +20,7 @@ ports:
 watchdog: http://[HOST]:[PORT:8099]/health
 options:
   lares_poll_interval: 20
-  mqtt_host: core-mosquitto
-  mqtt_port: 1883
+  node_max_old_space_size: 64
 schema:
   github_pat: password?
   lares_api_url: url?
@@ -29,10 +28,7 @@ schema:
   lares_village_id: str?
   lares_poll_interval: int(5,120)
   discord_webhook_url: url?
-  mqtt_host: str?
-  mqtt_port: port
-  mqtt_user: str?
-  mqtt_password: password?
+  node_max_old_space_size: int(32,512)
 environment: {}
 stage: experimental
 image: ghcr.io/zweer/hassio-addons/{arch}-lares-bot

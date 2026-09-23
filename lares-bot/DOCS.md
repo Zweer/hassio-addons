@@ -24,6 +24,7 @@ The bot polls the Lares API at a configurable interval and executes optimized st
 | `lares_village_id` | Your village name/ID | — |
 | `lares_poll_interval` | Polling interval in seconds | `20` |
 | `discord_webhook_url` | Discord webhook for log forwarding (optional) | — |
+| `node_max_old_space_size` | Max V8 heap in MB. Lower = less RAM, more frequent GC. Range 32–512. | `64` |
 
 ### GitHub PAT setup
 

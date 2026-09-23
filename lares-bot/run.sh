@@ -27,18 +27,6 @@ if [ -f "$HASSIO_CONFIG" ]; then
     export DISCORD_WEBHOOK_URL
   fi
 
-  export MQTT_HOST
-  MQTT_HOST=$(jq -r '.mqtt_host // empty' "$HASSIO_CONFIG")
-
-  export MQTT_PORT
-  MQTT_PORT=$(jq -r '.mqtt_port' "$HASSIO_CONFIG")
-
-  export MQTT_USER
-  MQTT_USER=$(jq -r '.mqtt_user // empty' "$HASSIO_CONFIG")
-
-  export MQTT_PASSWORD
-  MQTT_PASSWORD=$(jq -r '.mqtt_password // empty' "$HASSIO_CONFIG")
-
 elif [ -f "$LOCAL_ENV" ]; then
   echo "[lares-bot] Running locally — reading config from .env"
 
@@ -90,6 +78,16 @@ else
   echo "[ERROR] No GITHUB_PAT and no pre-built bundle found" >&2
   exit 1
 fi
+
+# ─── Memory tuning ───────────────────────────────────────────────────────────
+# The bot is a low-load poller (one HTTP round-trip every LARES_POLL_INTERVAL
+# seconds). V8's default heap is far larger than it needs and Node holds onto
+# memory it has claimed from the OS. Capping the old-space heap forces more
+# aggressive GC and keeps the resident footprint low on constrained hardware
+# (e.g. RPi4 4GB). NODE_OPTIONS is honoured by both `node` and `npx tsx`.
+MEM_LIMIT=$(jq -r '.node_max_old_space_size // 64' "$HASSIO_CONFIG" 2>/dev/null || echo 64)
+export NODE_OPTIONS="--max-old-space-size=${MEM_LIMIT} ${NODE_OPTIONS:-}"
+echo "[lares-bot] Node heap capped at ${MEM_LIMIT} MB (NODE_OPTIONS=${NODE_OPTIONS})"
 
 # ─── Start the bot ───────────────────────────────────────────────────────────
 echo "[lares-bot] Starting — village=${LARES_VILLAGE_ID:-unknown} poll=${LARES_POLL_INTERVAL:-20}s"

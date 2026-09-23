@@ -1,4 +1,4 @@
-ARG BUILD_FROM=node:24-slim
+ARG BUILD_FROM=node:24-alpine
 FROM ${BUILD_FROM}
 
 ARG BUILD_VERSION
@@ -10,11 +10,11 @@ LABEL \
     io.hass.name="Lares Bot" \
     io.hass.description="Automated strategy bot for Lares"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
       git \
       jq \
       ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+      bash
 
 WORKDIR /app
 
