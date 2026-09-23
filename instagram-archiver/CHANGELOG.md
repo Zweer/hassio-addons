@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 (2026-09-23)
+
+
+### Features
+
+* **instagram-archiver:** add addon to archive public IG profiles ([4ae9cfd](https://github.com/Zweer/hassio-addons/commit/4ae9cfda827bac8e5092fd957e76b4e7c061e46d))
+
 ## 0.1.0
 
 - Initial release.
