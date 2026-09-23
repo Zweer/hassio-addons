@@ -103,3 +103,10 @@ configuration:
   log_level:
     name: Log Level
     description: Application log verbosity.
+  create_platform_folders:
+    name: Pre-create Platform Folders
+    description: >-
+      List of RomM platform slugs to auto-create under library/roms on start
+      (e.g. psx, snes, gba). Gives your download client a ready target and
+      shows the platforms in RomM. Edit the list to add/remove consoles; use
+      the exact slugs from the RomM supported-platforms docs.

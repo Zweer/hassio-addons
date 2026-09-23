@@ -134,6 +134,22 @@ for dir in resources assets config; do
     mkdir -p "${BASE_PATH}/${dir}"
 done
 
+# Pre-create a per-platform folder for each slug in create_platform_folders, so
+# the *arr download client has a ready target and RomM shows the platforms.
+# Slugs are validated as safe folder names (letters, digits, dash) to avoid
+# path traversal from a mistyped option. Unknown-but-safe slugs are created
+# anyway (RomM just won't have metadata for them).
+PLATFORM_COUNT=0
+while IFS= read -r slug; do
+    [ -z "${slug}" ] && continue
+    if [[ "${slug}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        mkdir -p "${BASE_PATH}/library/roms/${slug}"
+        PLATFORM_COUNT=$((PLATFORM_COUNT + 1))
+    else
+        log "WARN: skipping invalid platform slug '${slug}' (allowed: letters, digits, - and _)."
+    fi
+done < <(jq -r '.create_platform_folders[]? // empty' "${OPTIONS_FILE}" 2>/dev/null || true)
+
 # --- Ownership ---------------------------------------------------------------
 chown -R "${ROMM_UID}:${ROMM_GID}" "${BASE_PATH}" 2>/dev/null || \
     log "WARN: could not chown ${BASE_PATH} — uploads may fail if permissions are wrong."
@@ -144,6 +160,7 @@ log "Configuration:"
 log "  database   = ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 log "  library    = ${BASE_PATH}/library/roms/{platform}"
 log "  firmware   = ${BASE_PATH}/library/bios/{platform}"
+log "  platforms  = ${PLATFORM_COUNT} folder(s) pre-created"
 log "  base path  = ${BASE_PATH}"
 log "  scan       = ${SCAN_WORKERS} workers, timeout ${SCAN_TIMEOUT}s"
 log "  web        = ${WEB_SERVER_CONCURRENCY} workers, kiosk=${KIOSK_MODE}"

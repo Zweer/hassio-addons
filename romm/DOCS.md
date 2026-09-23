@@ -122,9 +122,11 @@ collection"); Prowlarr's manual search + send-to-client is the practical path.
 ### Folder layout for ROMs
 
 RomM uses its default "Structure A" layout under `/share/romm/library`: games
-go in `roms/<platform>/`, and (optional) firmware in `bios/<platform>/`. Create
-one subfolder per platform, named with the RomM platform **slug** (matched
-case-insensitively):
+go in `roms/<platform>/`, and (optional) firmware in `bios/<platform>/`. The
+addon **auto-creates a folder per platform** on start, from the
+`create_platform_folders` option — so your download client has a ready target
+and the platforms show up in RomM without any manual `mkdir`. Edit that list to
+add or remove consoles (use the exact RomM **slug**, matched case-insensitively):
 
 ```
 /share/romm/library/
@@ -188,6 +190,7 @@ anyway.
 | `web_server_concurrency` | `2` | API worker processes. Kept low so HA stays responsive. |
 | `scan_timeout` | `86400` | Seconds before a scan job is killed (24h; first scans are slow). |
 | `log_level` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. |
+| `create_platform_folders` | popular consoles | List of platform slugs auto-created under `library/roms` on start. Edit to add/remove consoles. |
 
 ## Changing the web port
 

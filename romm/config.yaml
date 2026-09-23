@@ -48,6 +48,23 @@ options:
   web_server_concurrency: 2
   scan_timeout: 86400
   log_level: INFO
+  create_platform_folders:
+    - psx
+    - ps2
+    - n64
+    - snes
+    - nes
+    - gb
+    - gbc
+    - gba
+    - nds
+    - genesis
+    - sms
+    - gamegear
+    - saturn
+    - segacd
+    - psp
+    - arcade
 schema:
   db_host: str
   db_port: port
@@ -75,6 +92,8 @@ schema:
   web_server_concurrency: int(1,9)
   scan_timeout: int(3600,172800)
   log_level: list(DEBUG|INFO|WARNING|ERROR|CRITICAL)
+  create_platform_folders:
+    - str?
 environment: {}
 backup: hot
 backup_exclude:
