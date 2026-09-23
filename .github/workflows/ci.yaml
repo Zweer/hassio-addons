@@ -18,6 +18,7 @@ on:
           - lares-bot
           - suwayomi
           - romm
+          - instagram-archiver
       force_build:
         description: "Force build even without a release"
         type: boolean
@@ -136,6 +137,13 @@ jobs:
           failure-threshold: warning
           ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
 
+      - name: Lint Dockerfiles (instagram-archiver)
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: "instagram-archiver/Dockerfile"
+          failure-threshold: warning
+          ignore: DL3002,DL3006,DL3008,DL3018,DL3066,SC2015
+
   # ─────────────────────────────────────────────────────────────
   # Release Please — only on push to main
   # ─────────────────────────────────────────────────────────────
@@ -154,6 +162,8 @@ jobs:
       suwayomi_version: ${{ steps.release.outputs['suwayomi--version'] }}
       romm_released: ${{ steps.release.outputs['romm--release_created'] }}
       romm_version: ${{ steps.release.outputs['romm--version'] }}
+      instagram-archiver_released: ${{ steps.release.outputs['instagram-archiver--release_created'] }}
+      instagram-archiver_version: ${{ steps.release.outputs['instagram-archiver--version'] }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
@@ -454,6 +464,65 @@ jobs:
           labels: |
             org.opencontainers.image.title=RomM HA Addon
             org.opencontainers.image.version=${{ needs.release-please.outputs.romm_version }}
+
+  # ─────────────────────────────────────────────────────────────
+  # Build instagram-archiver — only when released
+  # ─────────────────────────────────────────────────────────────
+  build-instagram-archiver:
+    name: Build instagram-archiver (${{ matrix.arch }})
+    needs: release-please
+    if: needs.release-please.outputs['instagram-archiver_released'] == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [aarch64, amd64]
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: amd64
+            platform: linux/amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set metadata
+        id: meta
+        run: |
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: instagram-archiver
+          file: instagram-archiver/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-instagram-archiver:${{ needs.release-please.outputs['instagram-archiver_version'] }}
+            ${{ env.REGISTRY }}/${{ steps.meta.outputs.owner }}/hassio-addons/${{ matrix.arch }}-instagram-archiver:latest
+          build-args: |
+            BUILD_VERSION=${{ needs.release-please.outputs['instagram-archiver_version'] }}
+            BUILD_ARCH=${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Instagram Archiver HA Addon
+            org.opencontainers.image.version=${{ needs.release-please.outputs['instagram-archiver_version'] }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
   # ─────────────────────────────────────────────────────────────

@@ -50,6 +50,13 @@
       "extra-files": [
         "config.yaml"
       ]
+    },
+    "instagram-archiver": {
+      "component": "instagram-archiver",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "config.yaml"
+      ]
     }
   }
 }
