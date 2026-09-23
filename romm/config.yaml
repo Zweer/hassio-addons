@@ -15,9 +15,9 @@ startup: application
 boot: auto
 init: false
 ports:
-  8080/tcp: null
+  8080/tcp: 8080
 ports_description:
-  8080/tcp: RomM web interface — pick a free host port in the Network tab
+  8080/tcp: RomM web interface — change the host port here if 8080 is taken
 map:
   - type: share
     read_only: false

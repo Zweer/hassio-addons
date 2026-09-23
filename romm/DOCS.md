@@ -197,8 +197,9 @@ anyway.
 RomM listens on port **8080 inside the container**, which is isolated and never
 conflicts with anything on your host. What you expose on the host is separate:
 
-- Open the addon's **Network** tab. The "RomM web interface" entry has an empty
-  host port by default — type any free port (e.g. `8096`) and save.
+- The addon publishes RomM on host port **8080 by default**. If that port is
+  already taken (e.g. by qBittorrent), open the addon's **Network** tab, change
+  the "RomM web interface" host port to a free one (e.g. `8096`) and save.
 - Access RomM on your LAN at `http://<home-assistant-ip>:<that-port>`.
 - A **Cloudflare Tunnel** always targets the internal `http://<slug>:8080` and
   is unaffected by the host port you choose.
