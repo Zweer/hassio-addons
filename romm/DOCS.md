@@ -73,14 +73,22 @@ with a phone number set (required for the developer console).
    | **Name** | Something **unique/random**, e.g. `romm-<random-hash>`. A name already taken by someone else fails *silently* — don't use a generic name like "romm". |
    | **OAuth Redirect URLs** | `localhost` |
    | **Category** | `Application Integration` |
-   | **Client Type** | `Confidential` |
+   | **Client Type** | `Confidential` (Italian: **Informazioni riservate**) |
+
+   > **Client Type must be `Confidential`.** If you pick `Public` (Italian:
+   > *Pubblico*), Twitch shows **no Client Secret at all** — public clients
+   > cannot hold one — and RomM's client-credentials flow needs it. Choose
+   > *Confidential* / *Informazioni riservate*, save, then use the **New Secret**
+   > button on the app page to generate the secret.
 
    > **About the redirect URL:** RomM uses the OAuth *client-credentials* flow
    > (server-to-server), which never actually performs a redirect. Twitch still
-   > requires the field to be non-empty, so `localhost` is just a valid
-   > placeholder — it is never used.
+   > requires the field to be non-empty, so any valid URL works (`localhost` is
+   > the simplest) — it is never used.
 
-3. Create the app, then note the **Client ID** and generate a **Client Secret**.
+3. Create the app. On the app management page, note the **Client ID** and click
+   **New Secret** to generate the **Client Secret** (only available for a
+   Confidential client).
 4. Put them in `igdb_client_id` / `igdb_client_secret`.
 
 You can add other providers too (MobyGames, ScreenScraper, SteamGridDB,
