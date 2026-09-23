@@ -1,5 +1,5 @@
 name: RomM
-version: 0.1.0
+version: 0.1.1
 slug: romm
 description: >-
   Self-hosted ROM library manager & in-browser player (RomM). Scans your
@@ -13,82 +13,39 @@ arch:
   - amd64
 startup: application
 boot: auto
-# The upstream image ships its own s6-overlay supervision tree (nginx + gunicorn
-# + worker + valkey) started via its ENTRYPOINT/CMD. `init: false` keeps the
-# Supervisor from injecting its own init so that tree runs intact — our run.sh
-# execs the upstream entrypoint.
 init: false
-# No ingress: RomM's nginx serves from the root and cannot be mounted under the
-# Ingress sub-path. Reach the UI on the LAN or via a Cloudflare Tunnel (see
-# DOCS.md).
-#
-# RomM always listens on 8080 *inside* the container (isolated, never conflicts
-# with anything on your host). The host-side port is left `null` so the
-# Supervisor lets you choose a free one in the addon's **Network** tab — pick
-# whatever you like if 8080 is already taken. For a Cloudflare Tunnel, point the
-# service at http://<slug>:8080 (the internal port), independent of the host port.
 ports:
   8080/tcp: null
 ports_description:
-  8080/tcp: "RomM web interface — pick a free host port in the Network tab"
-# The library lives under /share/roms so the *arr download client and the file
-# editor can see it too. RomM's own working dirs (resources/assets/config) live
-# under /share/romm so hardlinks between them stay on one filesystem (EXDEV).
+  8080/tcp: RomM web interface — pick a free host port in the Network tab
 map:
   - type: share
     read_only: false
-# Do not restart the addon mid-scan: a Supervisor watchdog restart throws away
-# in-progress scan work. Left disabled deliberately.
 options:
-  # --- Database (REQUIRED) — uses the existing MariaDB addon --------------------
-  # Create a `romm` database and user in the MariaDB addon first (see DOCS.md).
-  # Set db_password in the Configuration tab; run.sh refuses to start if empty.
   db_host: core-mariadb
   db_port: 3306
   db_name: romm
   db_user: romm
-  db_password: ""
-  # --- Access ------------------------------------------------------------------
-  # kiosk_mode lets visitors browse (read-only) without logging in. Keep off if
-  # you expose the instance publicly via Cloudflare.
+  db_password: ''
   kiosk_mode: false
-  # Enable when served over HTTPS (e.g. behind a Cloudflare Tunnel): marks the
-  # session/CSRF cookies Secure. Leave off for plain-HTTP LAN access.
   https_cookies: false
-  # --- Metadata providers (all optional; without any, scans find no artwork) ---
-  # IGDB is the primary provider — get a free client id/secret from a Twitch
-  # developer app (see DOCS.md).
-  igdb_client_id: ""
-  igdb_client_secret: ""
-  mobygames_api_key: ""
-  screenscraper_user: ""
-  screenscraper_password: ""
-  steamgriddb_api_key: ""
-  retroachievements_api_key: ""
-  # Free, keyless hash-lookup providers that improve matching.
+  igdb_client_id: ''
+  igdb_client_secret: ''
+  mobygames_api_key: ''
+  screenscraper_user: ''
+  screenscraper_password: ''
+  steamgriddb_api_key: ''
+  retroachievements_api_key: ''
   hasheous_api_enabled: true
-  # --- Emulation toggles (in-browser Play button) ------------------------------
   emulatorjs_enabled: true
   ruffle_enabled: true
   jsdos_enabled: true
   pico8_enabled: true
-  # --- Scheduled maintenance ---------------------------------------------------
-  # Auto re-scan the library on a schedule (cron). Off by default; the *arr flow
-  # adds files at unpredictable times, so a nightly rescan is a sensible opt-in.
   scheduled_rescan: false
-  scheduled_rescan_cron: "0 3 * * *"
-  # Re-scan automatically when files change under the library. Cheap trigger,
-  # handy with an *arr download client dropping ROMs in.
+  scheduled_rescan_cron: 0 3 * * *
   rescan_on_filesystem_change: false
-  # --- Performance — tuned for a Raspberry Pi 4 sharing the box with HA --------
-  # Scans are bound by metadata-provider latency, not disk. Workers run those
-  # lookups in parallel: 3 keeps a core free for HA while moving at a good pace.
   scan_workers: 3
-  # API worker processes. Upstream suggests 2×CPU+1; 2 is deliberate since Home
-  # Assistant is the priority tenant on this machine.
   web_server_concurrency: 2
-  # RQ kills a scan job after this many seconds. Upstream's 14400 (4h) is too
-  # short for a first scan of a large library; 24h with a resumable quick scan.
   scan_timeout: 86400
   log_level: INFO
 schema:
@@ -121,6 +78,6 @@ schema:
 environment: {}
 backup: hot
 backup_exclude:
-  - "*.log"
+  - '*.log'
   - logs/
 image: ghcr.io/zweer/hassio-addons/{arch}-romm
