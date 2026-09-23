@@ -48,7 +48,7 @@ Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayom
 
 Self-hosted ROM library manager and in-browser player ([RomM](https://github.com/rommapp/romm)) running on your HA hardware — a "Plex for retro games".
 
-- **Fits the \*arr flow:** search games in Prowlarr, send them to your existing download client, and drop them into `/share/roms`. RomM scans that folder, organizes by platform, and enriches each title with metadata and artwork.
+- **Fits the \*arr flow:** search games in Prowlarr, send them to your existing download client, and drop them into `/share/romm/library/roms`. RomM scans that folder, organizes by platform, and enriches each title with metadata and artwork.
 - **Play in the browser (EmulatorJS):** PS1, PSP, N64, NDS, GB/GBC/GBA, NES, SNES, Mega Drive/32X/CD, Master System, Game Gear, Saturn, Atari, and more — no client install. PS2/GameCube/Wii/Switch can be catalogued but not played in-browser.
 - **Metadata providers:** IGDB (primary), MobyGames, ScreenScraper, SteamGridDB, RetroAchievements and keyless Hasheous — all optional.
 - **Uses the existing MariaDB addon** (`core-mariadb`) — no second database engine wasting RAM on the Pi.

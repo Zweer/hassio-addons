@@ -18,10 +18,11 @@ OPTIONS_FILE="/data/options.json"
 # RomM runs as uid/gid 1000 inside the upstream image.
 ROMM_UID=1000
 ROMM_GID=1000
-# ROMs live under /share/roms (shared with the *arr download client & file
-# editor). RomM's own working dirs live under /share/romm so the hardlinks RomM
-# makes between library/resources/assets/config never cross a filesystem (EXDEV).
-ROMS_DIR="/share/roms"
+# Everything RomM needs lives under one directory in shared storage, so the
+# whole setup is a single tidy folder and the hardlinks RomM makes between
+# library/resources/assets never cross a filesystem (EXDEV). RomM's default
+# "Structure A" layout applies: games go in library/roms/{platform}, firmware
+# in library/bios/{platform}.
 BASE_PATH="/share/romm"
 
 log() { echo "[romm] $*"; }
@@ -124,35 +125,25 @@ export SCAN_TIMEOUT="$(opt '.scan_timeout' '86400')"
 export LOGLEVEL="$(opt '.log_level' 'INFO')"
 
 # --- Library layout ----------------------------------------------------------
-# RomM expects library/, resources/, assets/, config/ under ROMM_BASE_PATH. We
-# keep them under /share/romm (one filesystem) and point the library at
-# /share/roms via a symlink so the *arr download client writes to a familiar,
-# top-level shared folder.
-mkdir -p "${ROMS_DIR}"
-mkdir -p "${BASE_PATH}"
+# Create RomM's expected directories under BASE_PATH (Structure A). No symlinks:
+# the whole thing lives under /share/romm, so it is one filesystem and stays
+# tidy. Games go in library/roms/{platform}; firmware in library/bios/{platform}.
+mkdir -p "${BASE_PATH}/library/roms"
+mkdir -p "${BASE_PATH}/library/bios"
 for dir in resources assets config; do
     mkdir -p "${BASE_PATH}/${dir}"
 done
-# library -> /share/roms (both live under /share, so it is not a cross-device
-# link; the symlink just gives the *arr flow a clean top-level target).
-if [ -e "${BASE_PATH}/library" ] && [ ! -L "${BASE_PATH}/library" ]; then
-    log "Migrating existing library into ${ROMS_DIR}..."
-    cp -an "${BASE_PATH}/library/." "${ROMS_DIR}/" 2>/dev/null || true
-    rm -rf "${BASE_PATH}/library"
-fi
-ln -sfn "${ROMS_DIR}" "${BASE_PATH}/library"
 
 # --- Ownership ---------------------------------------------------------------
 chown -R "${ROMM_UID}:${ROMM_GID}" "${BASE_PATH}" 2>/dev/null || \
     log "WARN: could not chown ${BASE_PATH} — uploads may fail if permissions are wrong."
-chown -R "${ROMM_UID}:${ROMM_GID}" "${ROMS_DIR}" 2>/dev/null || \
-    log "WARN: could not chown ${ROMS_DIR}."
 # /redis-data is a declared VOLUME upstream; only chown it so Valkey can write.
 chown -R "${ROMM_UID}:${ROMM_GID}" /redis-data 2>/dev/null || true
 
 log "Configuration:"
 log "  database   = ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
-log "  library    = ${ROMS_DIR} (${BASE_PATH}/library ->)"
+log "  library    = ${BASE_PATH}/library/roms/{platform}"
+log "  firmware   = ${BASE_PATH}/library/bios/{platform}"
 log "  base path  = ${BASE_PATH}"
 log "  scan       = ${SCAN_WORKERS} workers, timeout ${SCAN_TIMEOUT}s"
 log "  web        = ${WEB_SERVER_CONCURRENCY} workers, kiosk=${KIOSK_MODE}"

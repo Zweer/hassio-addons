@@ -3,7 +3,7 @@ version: 0.1.1
 slug: romm
 description: >-
   Self-hosted ROM library manager & in-browser player (RomM). Scans your
-  collection from /share/roms, enriches it with metadata/artwork (IGDB,
+  collection from /share/romm/library, enriches it with metadata/artwork (IGDB,
   ScreenScraper, MobyGames, ...), and lets you play retro games in the browser
   via EmulatorJS. Pairs with the Prowlarr/*arr download flow and the MariaDB
   addon. Tuned for a Raspberry Pi 4 sharing the box with Home Assistant.

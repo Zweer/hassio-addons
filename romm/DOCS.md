@@ -12,12 +12,12 @@ Assistant.
 - Runs the official `rommapp/romm` image on your HA hardware (aarch64 + amd64).
 - Serves the RomM web UI on a host port you choose (default 8080; change it in
   the addon's **Network** tab if that port is taken).
-- Scans ROMs from `/share/roms` — the same shared storage your download client
-  writes to — so the \*arr flow and the file editor can see the files too.
+- Scans ROMs from `/share/romm/library/roms` — shared storage your download
+  client can write to, and the file editor can see.
 - Uses your **existing MariaDB addon** as the database (no second DB engine
   wasting RAM on the Pi).
-- Persists RomM's working data (resources, assets, config, auth secret) under
-  `/share/romm` and `/data`, included in HA backups.
+- Keeps everything in one tidy folder, `/share/romm` (library, downloaded
+  artwork, saves, config, auth secret), included in HA backups.
 - Plays PS1, N64, SNES, GBA, Mega Drive, PSP, Saturn and more in the browser.
 
 ## Prerequisites
@@ -111,8 +111,8 @@ The realistic flow with your existing setup:
 ```
 Prowlarr (manual multi-indexer search: Console/PSx, PC/Games, ...)
    -> your download client (qBittorrent/Transmission)
-      -> downloads into /share/roms/<platform>
-         -> RomM scans /share/roms and enriches with metadata
+      -> downloads into /share/romm/library/roms/<platform>
+         -> RomM scans the library and enriches with metadata
             -> Play PS1/N64/SNES/... in the browser (EmulatorJS)
 ```
 
@@ -121,21 +121,30 @@ collection"); Prowlarr's manual search + send-to-client is the practical path.
 
 ### Folder layout for ROMs
 
-Put each platform in its own subfolder under `/share/roms`. RomM recognises many
-folder names per platform, e.g.:
+RomM uses its default "Structure A" layout under `/share/romm/library`: games
+go in `roms/<platform>/`, and (optional) firmware in `bios/<platform>/`. Create
+one subfolder per platform, named with the RomM platform **slug** (matched
+case-insensitively):
 
 ```
-/share/roms/
-├── psx/        (PlayStation 1)
-├── n64/        (Nintendo 64)
-├── snes/       (Super Nintendo)
-├── gba/        (Game Boy Advance)
-├── genesis/    (Sega Mega Drive)
-└── ...
+/share/romm/library/
+├── roms/
+│   ├── psx/        (PlayStation 1)
+│   ├── ps2/        (PlayStation 2 — catalogued, not browser-playable)
+│   ├── n64/        (Nintendo 64)
+│   ├── snes/       (Super Nintendo)
+│   ├── nes/        (Nintendo Entertainment System)
+│   ├── gba/        (Game Boy Advance)
+│   └── genesis/    (Sega Mega Drive; alias "megadrive" also works)
+└── bios/
+    ├── psx/        (PS1 BIOS, e.g. scph1001.bin — needed to play PS1)
+    └── ps2/
 ```
 
-See the [RomM folder-structure docs](https://docs.romm.app/latest/getting-started/folder-structure/)
-for the full list of accepted names.
+Common slugs: `psx` (PS1, alias `ps`), `ps2`, `n64`, `snes`, `nes`, `gb`, `gbc`,
+`gba`, `genesis`/`megadrive`, `saturn`, `psp`. See the full list in the
+[RomM folder-structure docs](https://docs.romm.app/latest/getting-started/folder-structure/)
+and [supported platforms](https://docs.romm.app/latest/Platforms-and-Players/Supported-Platforms/).
 
 ## What can be played in the browser
 
@@ -219,16 +228,24 @@ the HA ingress sub-path). To reach it from outside your network, use the
 ## Data storage
 
 ```
-/share/
-├── roms/                # your ROM library (shared with the *arr flow)
-└── romm/
-    ├── library -> /share/roms   # symlink
-    ├── resources/       # downloaded covers/screenshots
-    ├── assets/          # saves, states, screenshots
-    └── config/          # RomM config
+/share/romm/
+├── library/
+│   ├── roms/            # your ROMs, one subfolder per platform
+│   │   ├── psx/
+│   │   ├── snes/
+│   │   └── ...
+│   └── bios/            # optional firmware, one subfolder per platform
+│       └── psx/
+├── resources/           # downloaded covers/screenshots
+├── assets/              # saves, states, screenshots
+└── config/              # RomM config
 /data/
 └── .auth_secret         # generated once; keeps sessions valid across restarts
 ```
+
+Everything lives under a single `/share/romm` folder, so it is easy to back up
+or move to external storage later (just relocate that one folder). It is a
+single filesystem, so the hardlinks RomM makes between these subfolders work.
 
 ## Links
 
