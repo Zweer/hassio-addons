@@ -43,6 +43,13 @@
       "extra-files": [
         "config.yaml"
       ]
+    },
+    "romm": {
+      "component": "romm",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "config.yaml"
+      ]
     }
   }
 }

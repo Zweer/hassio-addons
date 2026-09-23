@@ -1,0 +1,105 @@
+configuration:
+  db_host:
+    name: Database Host
+    description: >-
+      Hostname of the MariaDB addon. Usually "core-mariadb".
+  db_port:
+    name: Database Port
+    description: MariaDB port (default 3306).
+  db_name:
+    name: Database Name
+    description: >-
+      Name of the database RomM uses. Create it in the MariaDB addon first.
+  db_user:
+    name: Database User
+    description: >-
+      MariaDB user with rights on the database above. Create it in the MariaDB
+      addon first.
+  db_password:
+    name: Database Password
+    description: >-
+      Password for the database user. Required — the addon will not start
+      without it.
+  kiosk_mode:
+    name: Kiosk Mode
+    description: >-
+      Let visitors browse the library read-only without logging in. Keep off if
+      you expose RomM publicly.
+  https_cookies:
+    name: Secure (HTTPS) Cookies
+    description: >-
+      Mark session/CSRF cookies as Secure. Enable when serving over HTTPS, e.g.
+      behind a Cloudflare Tunnel.
+  igdb_client_id:
+    name: IGDB Client ID
+    description: >-
+      IGDB (Twitch) client id. The primary metadata provider — get one free from
+      the Twitch Developer Console.
+  igdb_client_secret:
+    name: IGDB Client Secret
+    description: IGDB (Twitch) client secret.
+  mobygames_api_key:
+    name: MobyGames API Key
+    description: Optional MobyGames metadata API key.
+  screenscraper_user:
+    name: ScreenScraper Username
+    description: Optional ScreenScraper username for metadata/artwork.
+  screenscraper_password:
+    name: ScreenScraper Password
+    description: Optional ScreenScraper password.
+  steamgriddb_api_key:
+    name: SteamGridDB API Key
+    description: Optional SteamGridDB API key for custom artwork.
+  retroachievements_api_key:
+    name: RetroAchievements API Key
+    description: Optional RetroAchievements API key for achievement tracking.
+  hasheous_api_enabled:
+    name: Enable Hasheous
+    description: >-
+      Free, keyless hash-lookup provider that improves ROM matching. Recommended
+      to leave on.
+  emulatorjs_enabled:
+    name: Enable EmulatorJS
+    description: >-
+      In-browser play for supported systems (PS1, N64, SNES, GBA, ...).
+  ruffle_enabled:
+    name: Enable Ruffle
+    description: In-browser Flash (.swf) playback via RuffleRS.
+  jsdos_enabled:
+    name: Enable js-dos
+    description: In-browser DOS / Win3.x playback via js-dos.
+  pico8_enabled:
+    name: Enable PICO-8
+    description: In-browser PICO-8 playback via FAKE-08.
+  scheduled_rescan:
+    name: Scheduled Re-scan
+    description: >-
+      Re-scan the library automatically on a schedule (see the cron option).
+  scheduled_rescan_cron:
+    name: Scheduled Re-scan Cron
+    description: >-
+      Cron expression for the scheduled re-scan (default "0 3 * * *" = 3am
+      daily).
+  rescan_on_filesystem_change:
+    name: Re-scan on File Change
+    description: >-
+      Re-scan automatically when files change under the library. Handy with an
+      *arr download client dropping in new ROMs.
+  scan_workers:
+    name: Scan Workers
+    description: >-
+      How many ROMs a scan processes in parallel. 3 leaves a CPU core free for
+      Home Assistant on a Raspberry Pi 4.
+  web_server_concurrency:
+    name: Web Workers
+    description: >-
+      Number of API worker processes. Kept low (2) so Home Assistant stays
+      responsive; raise for several concurrent users.
+  scan_timeout:
+    name: Scan Timeout
+    description: >-
+      Seconds before a scan job is killed. Default 24h — a first scan of a large
+      library can take hours.
+  log_level:
+    name: Log Level
+    description: Application log verbosity.

@@ -44,6 +44,16 @@ Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayom
 - Downloads into `/share/suwayomi`; library and settings persisted in `/data`
 - Based on the official upstream Docker image (arm64 + amd64)
 
+### 🎮 [RomM](romm/)
+
+Self-hosted ROM library manager and in-browser player ([RomM](https://github.com/rommapp/romm)) running on your HA hardware.
+
+- Scans `/share/roms` (shared with your \*arr download flow), enriches with metadata/artwork (IGDB, ScreenScraper, MobyGames, ...)
+- Play PS1, N64, SNES, GBA, Mega Drive, PSP, Saturn and more from the browser (EmulatorJS)
+- Uses the existing MariaDB addon — no second database engine on the Pi
+- Optional metadata providers, emulation toggles, scheduled re-scans; tuned for RPi4 4GB
+- Reachable on your LAN or via Cloudflare Tunnel (no ingress); based on the official image (arm64 + amd64)
+
 ## Installation
 
 Add this repository to your Home Assistant addon store:
