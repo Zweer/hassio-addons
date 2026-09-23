@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Instagram-style gradient -->
+    <linearGradient id="ig" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#feda75"/>
+      <stop offset="25%" stop-color="#fa7e1e"/>
+      <stop offset="50%" stop-color="#d62976"/>
+      <stop offset="75%" stop-color="#962fbf"/>
+      <stop offset="100%" stop-color="#4f5bd5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded background with IG gradient -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#ig)"/>
+
+  <!-- Camera body (rounded square, IG-style outline) -->
+  <rect x="60" y="60" width="136" height="136" rx="36"
+        fill="none" stroke="#ffffff" stroke-width="12"/>
+
+  <!-- Lens -->
+  <circle cx="128" cy="128" r="34"
+          fill="none" stroke="#ffffff" stroke-width="12"/>
+
+  <!-- Flash dot -->
+  <circle cx="171" cy="85" r="9" fill="#ffffff"/>
+
+  <!-- Download / archive arrow inside the lens -->
+  <g stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="128" y1="110" x2="128" y2="140"/>
+    <polyline points="114,130 128,144 142,130"/>
+  </g>
+</svg>
