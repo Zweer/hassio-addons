@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Zweer/hassio-addons/compare/romm-v0.1.2...romm-v0.1.3) (2026-09-23)
+
+
+### Bug Fixes
+
+* **romm:** map web UI to host port 8080 by default ([b598d4c](https://github.com/Zweer/hassio-addons/commit/b598d4c4a7c9b66de8405cdf79b372eec47930a8))
+
 ## [0.1.2](https://github.com/Zweer/hassio-addons/compare/romm-v0.1.1...romm-v0.1.2) (2026-09-23)
 
 
