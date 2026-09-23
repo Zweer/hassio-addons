@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Zweer/hassio-addons/compare/instagram-archiver-v1.0.0...instagram-archiver-v1.1.0) (2026-09-23)
+
+
+### Features
+
+* **instagram-archiver:** add addon icon and logo ([13d78dd](https://github.com/Zweer/hassio-addons/commit/13d78dda5405e7d27fb204cfcc4dd4bb0fba7064))
+
 ## 1.0.0 (2026-09-23)
 
 
