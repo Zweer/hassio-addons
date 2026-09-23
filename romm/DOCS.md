@@ -60,15 +60,33 @@ The addon refuses to start while `db_password` is empty.
 
 ### 3. (Recommended) Add IGDB metadata credentials
 
-IGDB is the primary metadata provider (covers, descriptions, release info):
+IGDB is the primary metadata provider (covers, descriptions, release info). The
+IGDB API is accessed through a Twitch application, so you need a Twitch account
+with a phone number set (required for the developer console).
 
 1. Sign in to the [Twitch Developer Console](https://dev.twitch.tv/console/apps)
-   and register a new application.
-2. Copy the **Client ID** and generate a **Client Secret**.
-3. Put them in `igdb_client_id` / `igdb_client_secret`.
+   and click **Register Your Application**.
+2. Fill out the form exactly like this:
+
+   | Field | Value |
+   |-------|-------|
+   | **Name** | Something **unique/random**, e.g. `romm-<random-hash>`. A name already taken by someone else fails *silently* — don't use a generic name like "romm". |
+   | **OAuth Redirect URLs** | `localhost` |
+   | **Category** | `Application Integration` |
+   | **Client Type** | `Confidential` |
+
+   > **About the redirect URL:** RomM uses the OAuth *client-credentials* flow
+   > (server-to-server), which never actually performs a redirect. Twitch still
+   > requires the field to be non-empty, so `localhost` is just a valid
+   > placeholder — it is never used.
+
+3. Create the app, then note the **Client ID** and generate a **Client Secret**.
+4. Put them in `igdb_client_id` / `igdb_client_secret`.
 
 You can add other providers too (MobyGames, ScreenScraper, SteamGridDB,
 RetroAchievements). Without any provider, scans still work but find no artwork.
+For most users RomM recommends the combo **Hasheous + IGDB + SteamGridDB +
+RetroAchievements**.
 
 ### 4. Start and open
 
