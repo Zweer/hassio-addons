@@ -1,0 +1,32 @@
+configuration:
+  repository:
+    name: Repository URL
+    description: >-
+      SSH remote URL of the Git repository to sync with, e.g.
+      git@github.com:user/ha-config.git. HTTPS URLs are not supported —
+      this addon authenticates with an SSH deploy key.
+  branch:
+    name: Branch
+    description: >-
+      Branch to pull from and push to (e.g. "main").
+  deploy_key:
+    name: SSH Deploy Key
+    description: >-
+      Private SSH deploy key (multiline) with write access to the repository.
+      Generate it ON the HA host and paste the private key here — never share a
+      private key through chat. Add the matching public key to the repo's
+      Deploy Keys with write access enabled.
+  dry_run:
+    name: Dry Run
+    description: >-
+      When enabled, the full reconcile runs against your real /config but writes
+      NOTHING: rsync runs with --dry-run and git commit/push are skipped. Read
+      the addon log to see exactly what a live run would change, then turn this
+      off. Use it for the very first run to validate rsync and SSH safely.
+  extra_excludes:
+    name: Extra Excludes
+    description: >-
+      Additional patterns to exclude from sync (added to both the checkout
+      .gitignore and the rsync). Runtime/secret paths (secrets.yaml, .storage/,
+      the database, logs, custom_components/, backups/, ...) are already
+      excluded by default.

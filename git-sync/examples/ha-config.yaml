@@ -1,0 +1,120 @@
+# =============================================================================
+# Git Sync — Home Assistant side
+# =============================================================================
+# The addon writes /config/.gitsync_status.json every run. These entities read
+# that file, start the addon on demand, and alert when a sync ends in conflict.
+# All of this runs inside HA Core — no extra container needed.
+#
+# ── SETUP ────────────────────────────────────────────────────────────────────
+# 1. Merge the blocks below into configuration.yaml (into your existing
+#    `sensor:` / `command_line:` / `rest_command:` / `automation:` sections if
+#    you already have them).
+# 2. Reload: Developer Tools → YAML → the relevant domains, or restart HA.
+# =============================================================================
+
+# --- Read the status file --------------------------------------------------
+# A file sensor exposes the "state" (ok|conflict|error); command_line sensors
+# pull the individual fields out of the JSON with jq.
+sensor:
+  - platform: file
+    name: Git Sync State
+    file_path: /config/.gitsync_status.json
+    value_template: "{{ value_json.state }}"
+
+command_line:
+  - sensor:
+      name: Git Sync Last Commit
+      command: "cat /config/.gitsync_status.json"
+      value_template: "{{ value_json.last_commit[:7] }}"
+      json_attributes:
+        - message
+        - last_run
+      scan_interval: 60
+  - sensor:
+      name: Git Sync Ahead
+      command: "cat /config/.gitsync_status.json"
+      value_template: "{{ value_json.ahead | int(0) }}"
+      unit_of_measurement: "commits"
+      scan_interval: 60
+  - sensor:
+      name: Git Sync Behind
+      command: "cat /config/.gitsync_status.json"
+      value_template: "{{ value_json.behind | int(0) }}"
+      unit_of_measurement: "commits"
+      scan_interval: 60
+
+# --- Start the addon via the Supervisor API --------------------------------
+# The local repository addon's slug is "local_git_sync". Two ways to start it:
+#
+# (A) Simplest — the hassio.addon_start action (no token handling):
+#         action: hassio.addon_start
+#         data:
+#           addon: local_git_sync
+#
+# (B) Raw Supervisor REST call. Home Assistant exposes the Supervisor token to
+#     the recorder/templates as `SUPERVISOR_TOKEN`; reference it via an
+#     environment/secret you populate, or prefer method (A). The header MUST be
+#     "Bearer <token>".
+rest_command:
+  git_sync_run:
+    url: "http://supervisor/addons/local_git_sync/start"
+    method: POST
+    headers:
+      authorization: !secret supervisor_bearer_token
+    content_type: "application/json"
+    payload: "{}"
+
+# --- Automations -----------------------------------------------------------
+automation:
+  # (a) Run sync on a schedule (every 30 min) using the simple action.
+  - id: git_sync_scheduled
+    alias: "Git Sync: scheduled sync"
+    trigger:
+      - trigger: time_pattern
+        minutes: "/30"
+    action:
+      - action: hassio.addon_start
+        data:
+          addon: local_git_sync
+
+  # (a') Run sync on a dashboard button press (input_button.git_sync_now).
+  - id: git_sync_button
+    alias: "Git Sync: sync on button press"
+    trigger:
+      - trigger: state
+        entity_id: input_button.git_sync_now
+    action:
+      - action: hassio.addon_start
+        data:
+          addon: local_git_sync
+
+  # (b) Notify when the last sync ended in conflict.
+  - id: git_sync_conflict_alert
+    alias: "Git Sync: alert on conflict"
+    trigger:
+      - trigger: state
+        entity_id: sensor.git_sync_state
+        to: "conflict"
+    action:
+      - action: persistent_notification.create
+        data:
+          title: "Git Sync conflict"
+          message: >-
+            Git Sync stopped without changing anything:
+            {{ state_attr('sensor.git_sync_last_commit', 'message') }}.
+            Resolve the divergence manually, then run the sync again.
+
+  # (b') Notify on any error state too.
+  - id: git_sync_error_alert
+    alias: "Git Sync: alert on error"
+    trigger:
+      - trigger: state
+        entity_id: sensor.git_sync_state
+        to: "error"
+    action:
+      - action: persistent_notification.create
+        data:
+          title: "Git Sync error"
+          message: >-
+            Git Sync failed:
+            {{ state_attr('sensor.git_sync_last_commit', 'message') }}.

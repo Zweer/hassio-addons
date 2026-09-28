@@ -49,3 +49,15 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/git-sync"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "fix(git-sync)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"

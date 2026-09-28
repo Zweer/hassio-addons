@@ -57,6 +57,13 @@
       "extra-files": [
         "config.yaml"
       ]
+    },
+    "git-sync": {
+      "component": "git-sync",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "config.yaml"
+      ]
     }
   }
 }

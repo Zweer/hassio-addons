@@ -57,6 +57,19 @@ Self-hosted ROM library manager and in-browser player ([RomM](https://github.com
 
 See [`romm/DOCS.md`](romm/DOCS.md) for the full setup guide (MariaDB database, IGDB credentials, folder layout, Cloudflare).
 
+### 🔄 [Git Sync](git-sync/)
+
+One-shot, SSH-first, bidirectional Git sync for your Home Assistant config, running on your HA hardware.
+
+- On start it pulls (`--ff-only`) then pushes (no force) and self-exits — no always-on process
+- Fail-safe: on any conflict it stops, touches nothing, logs, and exits non-zero (never merges, never force-pushes)
+- Git checkout lives in `/data/gitrepo`, separate from `/config`
+- SSH deploy key only; excludes secrets, `.storage/`, the database, HACS `custom_components/`, backups, etc.
+- Writes `/config/.gitsync_status.json` each run for HA sensors; start it from an automation via the Supervisor API
+
+See [`git-sync/DOCS.md`](git-sync/DOCS.md) for deploy-key setup, the fail-safe model, and HA automation examples.
+
+
 ## Installation
 
 Add this repository to your Home Assistant addon store:
