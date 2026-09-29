@@ -2,20 +2,34 @@ configuration:
   repository:
     name: Repository URL
     description: >-
-      SSH remote URL of the Git repository to sync with, e.g.
-      git@github.com:user/ha-config.git. HTTPS URLs are not supported —
-      this addon authenticates with an SSH deploy key.
+      Remote URL of the Git repository to sync with. For SSH auth use an SSH URL
+      (git@github.com:user/ha-config.git); for PAT auth use an HTTPS URL
+      (https://github.com/user/ha-config.git). Must match the selected Auth
+      Method.
   branch:
     name: Branch
     description: >-
       Branch to pull from and push to (e.g. "main").
+  auth_method:
+    name: Auth Method
+    description: >-
+      How to authenticate with the remote. "ssh" uses the SSH Deploy Key with an
+      SSH repository URL; "pat" uses the Personal Access Token with an HTTPS
+      repository URL. Fill in only the credential for the method you pick.
   deploy_key:
     name: SSH Deploy Key
     description: >-
-      Private SSH deploy key (multiline) with write access to the repository.
+      Private SSH deploy key (multiline), used when Auth Method is "ssh".
       Generate it ON the HA host and paste the private key here — never share a
       private key through chat. Add the matching public key to the repo's
       Deploy Keys with write access enabled.
+  pat_token:
+    name: Personal Access Token
+    description: >-
+      Git Personal Access Token with write (Contents) access, used when Auth
+      Method is "pat". On GitHub, a fine-grained token scoped to the single repo
+      with "Contents: Read and write" is enough. The token is passed to git via
+      an askpass helper and is never written to the repo URL or logs.
   dry_run:
     name: Dry Run
     description: >-

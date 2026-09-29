@@ -1,6 +1,8 @@
 # Git Sync
 
-One-shot, SSH-first, **bidirectional** Git sync for your Home Assistant config.
+One-shot, **bidirectional** Git sync for your Home Assistant config, with two
+authentication methods: an **SSH deploy key** or an **HTTPS Personal Access
+Token (PAT)**. Pick one with the `auth_method` option.
 
 When started, the addon does **one** reconcile of `/config` with a Git remote
 and then **exits** — there is no always-on process and no web server. Home
@@ -50,9 +52,11 @@ Add more patterns with the `extra_excludes` option.
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `repository` | SSH remote URL, e.g. `git@github.com:user/ha-config.git` | — |
+| `repository` | Remote URL. SSH: `git@github.com:user/ha-config.git`. PAT: `https://github.com/user/ha-config.git` | — |
 | `branch` | Branch to sync | `main` |
-| `deploy_key` | Private SSH deploy key (multiline, paste as-is) | — |
+| `auth_method` | `ssh` (deploy key) or `pat` (HTTPS token) | `ssh` |
+| `deploy_key` | Private SSH deploy key (multiline) — used when `auth_method: ssh` | — |
+| `pat_token` | Personal Access Token with write access — used when `auth_method: pat` | — |
 | `dry_run` | Simulate a full reconcile without writing anything (see below) | `false` |
 | `extra_excludes` | Extra rsync/`.gitignore` patterns (list) | `[]` |
 
@@ -78,7 +82,11 @@ Recommended first-run flow:
 3. When the log looks correct, set `dry_run: false` and start it again for the
    real sync.
 
-### Generating the SSH deploy key (do this ON the HA host, not in chat)
+### Authentication — option A: SSH deploy key (`auth_method: ssh`)
+
+Use an **SSH** repository URL (`git@github.com:user/ha-config.git`).
+
+#### Generating the SSH deploy key (do this ON the HA host, not in chat)
 
 Open the HA host terminal (e.g. the *Terminal & SSH* / *Advanced SSH* addon) and
 run:
@@ -92,11 +100,32 @@ cat /root/.ssh/ha_git_sync.pub    # <-- PUBLIC key: add to GitHub (below)
 Never send a private key through chat or a shared channel. Generate it on the
 machine that will use it and paste only into the addon's `deploy_key` field.
 
-### Adding the deploy key to the GitHub repo
+#### Adding the deploy key to the GitHub repo
 
 1. GitHub → your config repo → **Settings → Deploy keys → Add deploy key**.
 2. Paste the **public** key (`.pub`).
 3. Tick **Allow write access** (the addon needs to push).
+
+### Authentication — option B: HTTPS Personal Access Token (`auth_method: pat`)
+
+Use an **HTTPS** repository URL (`https://github.com/user/ha-config.git`), set
+`auth_method: pat`, and paste a token into `pat_token`. No SSH key is needed.
+
+On **GitHub**, prefer a **fine-grained** token scoped to just this repo:
+
+1. GitHub → **Settings → Developer settings → Personal access tokens →
+   Fine-grained tokens → Generate new token**.
+2. **Repository access:** *Only select repositories* → your config repo.
+3. **Permissions → Repository permissions → Contents:** *Read and write*.
+   (That single permission is enough to clone, pull and push.)
+4. Set an expiry and generate. Copy the token and paste it into `pat_token`.
+
+A classic token with the `repo` scope also works. On GitLab, use a project or
+personal access token with the `write_repository` scope.
+
+The token is handed to git through an askpass helper, so it is **never written
+into the remote URL, `.git/config`, or the addon logs**. Rotate it by pasting a
+new one; revoke the old one from the provider.
 
 ## Status file
 
@@ -149,3 +178,9 @@ See the examples file for both approaches.
 
 Logs are visible in the Home Assistant addon log panel, each line prefixed
 `[git-sync]`. A run exits `0` on success and non-zero on conflict/error.
+
+## Credits
+
+The addon icon uses the official [Git logo](https://git-scm.com/downloads/logos)
+by Jason Long, licensed under
+[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).

@@ -2,9 +2,10 @@ name: Git Sync
 version: 1.0.0
 slug: git-sync
 description: >-
-  One-shot, SSH-first, bidirectional Git sync for your Home Assistant config. On
-  start it pulls (--ff-only) then pushes (no force) and self-exits. Fail-safe:
-  on any conflict it stops, touches nothing, logs, and exits non-zero.
+  One-shot, bidirectional Git sync for your Home Assistant config (SSH key or
+  HTTPS Personal Access Token). On start it pulls (--ff-only) then pushes (no
+  force) and self-exits. Fail-safe: on any conflict it stops, touches nothing,
+  logs, and exits non-zero.
 url: https://github.com/Zweer/hassio-addons
 arch:
   - aarch64
@@ -21,12 +22,16 @@ map:
 options:
   repository: ''
   branch: main
+  auth_method: ssh
   deploy_key: ''
+  pat_token: ''
   dry_run: false
 schema:
-  repository: url
+  repository: str
   branch: str
+  auth_method: list(ssh|pat)
   deploy_key: password
+  pat_token: password
   dry_run: bool
   extra_excludes:
     - str?

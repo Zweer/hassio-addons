@@ -106,7 +106,9 @@ if [ -f "${OPTIONS_FILE}" ]; then
     log "Environment: Home Assistant (reading ${OPTIONS_FILE})"
     REPOSITORY="$(opt '.repository' '')"
     BRANCH="$(opt '.branch' 'main')"
+    AUTH_METHOD="$(opt '.auth_method' 'ssh')"
     DEPLOY_KEY="$(jq -r '.deploy_key // empty' "${OPTIONS_FILE}" 2>/dev/null || true)"
+    PAT_TOKEN="$(jq -r '.pat_token // empty' "${OPTIONS_FILE}" 2>/dev/null || true)"
     DRY_RUN="$(opt '.dry_run' 'false')"
     # extra_excludes is an optional list of additional rsync/gitignore patterns.
     mapfile -t EXTRA_EXCLUDES < <(jq -r '.extra_excludes[]? // empty' "${OPTIONS_FILE}" 2>/dev/null || true)
@@ -116,18 +118,44 @@ elif [ -f "${LOCAL_ENV}" ]; then
     . "${LOCAL_ENV}"
     REPOSITORY="${REPOSITORY:-}"
     BRANCH="${BRANCH:-main}"
+    AUTH_METHOD="${AUTH_METHOD:-ssh}"
     DEPLOY_KEY="${DEPLOY_KEY:-}"
+    PAT_TOKEN="${PAT_TOKEN:-}"
     DRY_RUN="${DRY_RUN:-false}"
     EXTRA_EXCLUDES=()
 else
     fail "no config found - need ${OPTIONS_FILE} (Hassio) or ${LOCAL_ENV} (local)"
 fi
 
-[ -n "${REPOSITORY}" ] || fail "'repository' option is empty - set the SSH remote URL (e.g. git@github.com:user/ha-config.git)"
-[ -n "${DEPLOY_KEY}" ] || fail "'deploy_key' option is empty - paste the private SSH deploy key"
+[ -n "${REPOSITORY}" ] || fail "'repository' option is empty - set the remote URL"
+
+# Normalise and validate the auth method (ssh | pat).
+AUTH_METHOD="$(printf '%s' "${AUTH_METHOD}" | tr '[:upper:]' '[:lower:]')"
+case "${AUTH_METHOD}" in
+    ssh)
+        [ -n "${DEPLOY_KEY}" ] || fail "'deploy_key' is empty - paste the private SSH deploy key (auth_method=ssh)"
+        case "${REPOSITORY}" in
+            git@*|ssh://*) : ;;
+            https://*) fail "auth_method=ssh but 'repository' is an HTTPS URL (${REPOSITORY}). Use an SSH URL (git@github.com:user/repo.git) or set auth_method=pat." ;;
+            *) log_warn "repository '${REPOSITORY}' does not look like an SSH URL (git@... / ssh://...)" ;;
+        esac
+        ;;
+    pat)
+        [ -n "${PAT_TOKEN}" ] || fail "'pat_token' is empty - paste a Personal Access Token with write access (auth_method=pat)"
+        case "${REPOSITORY}" in
+            https://*) : ;;
+            git@*|ssh://*) fail "auth_method=pat but 'repository' is an SSH URL (${REPOSITORY}). Use an HTTPS URL (https://github.com/user/repo.git) or set auth_method=ssh." ;;
+            *) fail "auth_method=pat requires an HTTPS repository URL (https://github.com/user/repo.git), got '${REPOSITORY}'" ;;
+        esac
+        ;;
+    *)
+        fail "invalid 'auth_method' '${AUTH_METHOD}' - must be 'ssh' or 'pat'"
+        ;;
+esac
 
 log "Repository : ${REPOSITORY}"
 log "Branch     : ${BRANCH}"
+log "Auth       : ${AUTH_METHOD}"
 
 # --- Dry-run mode -------------------------------------------------------------
 # When enabled, rsync runs with --dry-run (shows what WOULD change without
@@ -174,18 +202,43 @@ for e in "${EXCLUDES[@]}"; do
     RSYNC_EXCLUDES+=("--exclude=${e}")
 done
 
-# --- Mount SSH deploy key -----------------------------------------------------
-log "Configuring SSH deploy key and pinning github.com host keys..."
-mkdir -p "${SSH_DIR}"
-chmod 700 "${SSH_DIR}"
-# Write the private key; never echo its contents.
-printf '%s\n' "${DEPLOY_KEY}" > "${SSH_KEY}"
-chmod 600 "${SSH_KEY}"
-# Pin GitHub host keys (extend here if using another forge).
-ssh-keyscan -t rsa,ecdsa,ed25519 github.com > "${SSH_DIR}/known_hosts" 2>/dev/null \
-    || fail "ssh-keyscan failed - no network access to github.com?"
-chmod 644 "${SSH_DIR}/known_hosts"
-export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -o UserKnownHostsFile=${SSH_DIR}/known_hosts -o IdentitiesOnly=yes"
+# --- Configure authentication -------------------------------------------------
+if [ "${AUTH_METHOD}" = "ssh" ]; then
+    log "Configuring SSH deploy key and pinning github.com host keys..."
+    mkdir -p "${SSH_DIR}"
+    chmod 700 "${SSH_DIR}"
+    # Write the private key; never echo its contents.
+    printf '%s\n' "${DEPLOY_KEY}" > "${SSH_KEY}"
+    chmod 600 "${SSH_KEY}"
+    # Pin GitHub host keys (extend here if using another forge).
+    ssh-keyscan -t rsa,ecdsa,ed25519 github.com > "${SSH_DIR}/known_hosts" 2>/dev/null \
+        || fail "ssh-keyscan failed - no network access to github.com?"
+    chmod 644 "${SSH_DIR}/known_hosts"
+    export GIT_SSH_COMMAND="ssh -i ${SSH_KEY} -o UserKnownHostsFile=${SSH_DIR}/known_hosts -o IdentitiesOnly=yes"
+else
+    # PAT over HTTPS. The token is fed to git via GIT_ASKPASS so it never lands
+    # in the remote URL, .git/config, or the process/argument list. git prompts
+    # for a username first (any non-empty value works for a PAT on GitHub) then
+    # a password (the token) - the askpass script answers both.
+    log "Configuring HTTPS Personal Access Token auth..."
+    ASKPASS="/tmp/git-askpass.sh"
+    # x-access-token is GitHub's conventional username for token auth; GitLab
+    # and others accept any username with the token as the password.
+    export GIT_ASKPASS_USER="x-access-token"
+    export GIT_ASKPASS_TOKEN="${PAT_TOKEN}"
+    cat > "${ASKPASS}" <<'ASKPASS_EOF'
+#!/usr/bin/env bash
+# Answer git's credential prompts from env. Never prints the token elsewhere.
+case "$1" in
+    *Username*|*username*) printf '%s\n' "${GIT_ASKPASS_USER}" ;;
+    *) printf '%s\n' "${GIT_ASKPASS_TOKEN}" ;;
+esac
+ASKPASS_EOF
+    chmod 700 "${ASKPASS}"
+    export GIT_ASKPASS="${ASKPASS}"
+    # Non-interactive: fail fast instead of blocking on a terminal prompt.
+    export GIT_TERMINAL_PROMPT=0
+fi
 
 # --- Clone on first run, otherwise fetch --------------------------------------
 AHEAD=0
