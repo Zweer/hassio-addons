@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.1.2...git-sync-v1.1.3) (2026-09-30)
+
+
+### Bug Fixes
+
+* **git-sync:** hard-align checkout to origin on pull instead of ff-only ([762e9b8](https://github.com/Zweer/hassio-addons/commit/762e9b85774a3c2f76940bcaddbe2ec9566a1a1c))
+
 ## [1.1.2](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.1.1...git-sync-v1.1.2) (2026-09-30)
 
 
