@@ -1,5 +1,5 @@
 name: Git Sync
-version: 1.1.1
+version: 1.1.2
 slug: git-sync
 description: >-
   One-shot, bidirectional Git sync for your Home Assistant config (SSH key or

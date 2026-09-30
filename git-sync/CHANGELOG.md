@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.1.1...git-sync-v1.1.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **git-sync:** make pull additive and guard against nested-repo layout ([00501f0](https://github.com/Zweer/hassio-addons/commit/00501f094d0d9135302e1bc882f7362e4628f698))
+
 ## [1.1.1](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.1.0...git-sync-v1.1.1) (2026-09-30)
 
 
