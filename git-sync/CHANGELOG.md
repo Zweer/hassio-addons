@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.1.0...git-sync-v1.1.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **git-sync:** exclude stale checkout and status file from sync ([488ba3c](https://github.com/Zweer/hassio-addons/commit/488ba3c778fc4b31b9a161b84426646d210a5fec))
+
 ## [1.1.0](https://github.com/Zweer/hassio-addons/compare/git-sync-v1.0.0...git-sync-v1.1.0) (2026-09-29)
 
 
