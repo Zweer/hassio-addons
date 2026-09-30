@@ -191,6 +191,8 @@ EXCLUDES=(
     ".cloud/"
     "backups/"
     ".git/"
+    ".gitrepo/"
+    ".gitsync_status.json"
 )
 if [ "${#EXTRA_EXCLUDES[@]}" -gt 0 ]; then
     EXCLUDES+=("${EXTRA_EXCLUDES[@]}")
