@@ -98,6 +98,24 @@ fail() {
     exit 1
 }
 
+# --- Anti-nesting guard -------------------------------------------------------
+# The checkout ROOT maps 1:1 to /config. A repo that is nested (config living
+# under a top-level `config/` directory) would rsync `config/` INTO /config and
+# materialise /config/config/ - the exact incident that duplicated a level and
+# left HA loading empty placeholders at root. Detect that shape BEFORE the pull
+# rsync and REFUSE the sync rather than versing a nested layout into /config.
+#
+# Precise, low-false-positive check: a top-level *directory* literally named
+# `config` at the checkout root. A regular file called `config` (e.g. a helper
+# script or a YAML fragment) is NOT a nesting signal and does not trip the guard.
+# assert_not_nested <checkout_dir>
+assert_not_nested() {
+    local checkout="$1"
+    if [ -d "${checkout}/config" ] && [ ! -L "${checkout}/config" ]; then
+        conflict "checkout root contains a top-level 'config/' directory - the repo looks NESTED (config should live at the repo root, mapping 1:1 to /config). Refusing the pull to protect ${CONFIG_DIR}: syncing this layout would create ${CONFIG_DIR}/config/ and bury your live config one level too deep. Flatten the repo (move repo/config/* to the repo root) and re-run."
+    fi
+}
+
 # --- Read configuration -------------------------------------------------------
 log "======================================================================"
 log "Git Sync addon starting - one-shot bidirectional sync (pull then push)"
@@ -298,8 +316,12 @@ if [ "${DRY_RUN}" = true ]; then
         conflict "local checkout diverged from origin/${BRANCH}, manual intervention needed (no merge performed)"
     fi
     # rsync --dry-run: show what pulling WOULD write into /config, change nothing.
+    # Anti-nesting guard runs even in dry-run so a nested repo reports the refusal.
+    assert_not_nested "${GITREPO_DIR}"
     log "[dry-run] files that would change in ${CONFIG_DIR} (nothing is written):"
-    rsync -a --delete "${RSYNC_DRY[@]}" "${RSYNC_EXCLUDES[@]}" "${GITREPO_DIR}/" "${CONFIG_DIR}/" \
+    # No --delete on PULL: the pull only adds/updates files present in the repo.
+    # It can never remove an unversioned runtime file that lives only in /config.
+    rsync -a "${RSYNC_DRY[@]}" "${RSYNC_EXCLUDES[@]}" "${GITREPO_DIR}/" "${CONFIG_DIR}/" \
         || fail "rsync (checkout -> /config) dry-run failed"
 else
     log "Running git pull --ff-only origin ${BRANCH}..."
@@ -307,11 +329,17 @@ else
         conflict "local checkout diverged from origin/${BRANCH}, manual intervention needed (no merge performed)"
     fi
 
-    # Mirror the pulled checkout state INTO /config (honouring excludes). --delete
-    # makes /config match the checkout for tracked files, while excludes protect
-    # runtime-only paths (.storage, db, custom_components, ...) from removal.
-    log "Syncing checkout -> ${CONFIG_DIR}..."
-    rsync -a --delete "${RSYNC_EXCLUDES[@]}" "${GITREPO_DIR}/" "${CONFIG_DIR}/" \
+    # Mirror the pulled checkout state INTO /config (honouring excludes).
+    # NO --delete on PULL by design: the pull only creates/updates files that
+    # exist in the repo checkout. It can NEVER delete a file that lives only in
+    # /config (unversioned HA runtime: .storage, *.db, secrets.yaml, manually
+    # created files, dirs not in EXCLUDES). Dropping a file from the repo will
+    # therefore NOT remove it from /config - an accepted trade-off: a live
+    # config dir must never be silently pruned to match a remote. This mirrors
+    # the retired gitsync.sh, which deliberately avoided --delete on pull.
+    assert_not_nested "${GITREPO_DIR}"
+    log "Syncing checkout -> ${CONFIG_DIR} (additive, no deletions)..."
+    rsync -a "${RSYNC_EXCLUDES[@]}" "${GITREPO_DIR}/" "${CONFIG_DIR}/" \
         || fail "rsync (checkout -> /config) failed"
     log "Pull applied to ${CONFIG_DIR}."
 fi
