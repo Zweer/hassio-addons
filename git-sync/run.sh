@@ -7,11 +7,13 @@
 # EXITS (the container self-stops). Order per run: PULL first, then PUSH.
 #   1. Read HA addon options from /data/options.json (opt() helper).
 #   2. Mount the SSH deploy key from the `deploy_key` option.
-#   3. PULL:  git fetch + git pull --ff-only  -> rsync into /config.
+#   3. PULL:  git fetch + hard-align checkout to origin -> rsync into /config.
 #   4. PUSH:  rsync /config -> checkout, git add/commit, git push (no force).
-# FAIL-SAFE: on ANY conflict (ff-only fails, or push rejected) it stops,
-# touches nothing, logs clearly, writes state=conflict and exits non-zero.
-# NEVER merges, NEVER force-pushes.
+# FAIL-SAFE: the PULL hard-aligns the DISPOSABLE checkout to origin (a dirty or
+# diverged checkout is never a hard stop; local checkout commits are re-derived
+# from /config on PUSH). A rejected PUSH still stops, touches nothing, writes
+# state=conflict and exits non-zero. NEVER merges, NEVER force-pushes, and NEVER
+# resets or deletes anything under /config.
 #
 # The Git checkout lives in /data/gitrepo, SEPARATE from /config, so we never
 # create a nested /config/config checkout.
@@ -280,17 +282,15 @@ git config user.name "HA Git Sync"
 # Ensure we are on the requested branch.
 git checkout "${BRANCH}" 2>/dev/null || git checkout -b "${BRANCH}"
 
-# Keep the checkout's .gitignore in sync with the exclude list so files that
-# should never be committed are ignored inside the checkout too.
-{
-    echo "# Managed by the git-sync addon - do not edit by hand."
-    for e in "${EXCLUDES[@]}"; do
-        echo "${e}"
-    done
-} > "${GITREPO_DIR}/.gitignore"
+# NOTE: the managed .gitignore is deliberately NOT written here. It is a TRACKED
+# file, so rewriting it before the pull leaves an uncommitted local change that
+# makes the reset/clean below (and the retired `git pull --ff-only`) trip over
+# ".gitignore would be overwritten". We align the checkout to origin FIRST
+# (STEP 1 below) and only then write the managed .gitignore on that clean base.
 
 # ==============================================================================
-# STEP 1 - PULL (--ff-only). On divergence: FAIL-SAFE, no writes to /config.
+# STEP 1 - PULL (hard-align to origin). On real divergence: log, still proceed
+# by taking origin's state (the checkout is DISPOSABLE; /config is never reset).
 # ==============================================================================
 log_step "STEP 1/2  PULL  (origin/${BRANCH} -> ${CONFIG_DIR})"
 log "Fetching origin/${BRANCH}..."
@@ -308,14 +308,17 @@ fi
 
 if [ "${DRY_RUN}" = true ]; then
     # Do NOT mutate the checkout. Check whether a fast-forward WOULD be possible:
-    # HEAD must be an ancestor of origin/BRANCH (behind or equal). If we are
-    # ahead-and-behind (diverged), --ff-only would fail -> report conflict.
+    # HEAD relative to origin/BRANCH. Under the hard-align model the pull is
+    # never a fatal conflict - the checkout is disposable and gets reset to
+    # origin - so we REPORT what the alignment would do instead of aborting.
     if git merge-base --is-ancestor HEAD "origin/${BRANCH}" 2>/dev/null; then
-        log "[dry-run] fast-forward possible - ${BEHIND} commit(s) would be applied to ${CONFIG_DIR}"
+        log "[dry-run] fast-forward - ${BEHIND} commit(s) would be applied to ${CONFIG_DIR}"
     else
-        conflict "local checkout diverged from origin/${BRANCH}, manual intervention needed (no merge performed)"
+        log_warn "[dry-run] checkout has DIVERGED from origin/${BRANCH} (${AHEAD} ahead, ${BEHIND} behind); a real run would hard-align to origin, DISCARDING the ${AHEAD} local commit(s) and taking origin's state."
     fi
-    # rsync --dry-run: show what pulling WOULD write into /config, change nothing.
+    # rsync --dry-run: show what aligning to origin WOULD write into /config.
+    # NOTE: this previews against the CURRENT (un-mutated) checkout tree, since a
+    # dry-run must not fetch/reset; on a real run the tree is origin's exactly.
     # Anti-nesting guard runs even in dry-run so a nested repo reports the refusal.
     assert_not_nested "${GITREPO_DIR}"
     log "[dry-run] files that would change in ${CONFIG_DIR} (nothing is written):"
@@ -324,12 +327,38 @@ if [ "${DRY_RUN}" = true ]; then
     rsync -a "${RSYNC_DRY[@]}" "${RSYNC_EXCLUDES[@]}" "${GITREPO_DIR}/" "${CONFIG_DIR}/" \
         || fail "rsync (checkout -> /config) dry-run failed"
 else
-    log "Running git pull --ff-only origin ${BRANCH}..."
-    if ! git pull --ff-only origin "${BRANCH}"; then
-        conflict "local checkout diverged from origin/${BRANCH}, manual intervention needed (no merge performed)"
+    # Hard-align the checkout to origin/BRANCH. This is the "pull": the checkout
+    # is DISPOSABLE (it is re-materialised from origin every run), so instead of
+    # `git pull --ff-only` - which aborts the moment the checkout is dirty or has
+    # drifted (e.g. our own managed .gitignore rewrite) - we take origin's state
+    # verbatim. This kills the tracked-.gitignore conflict AND any managed-file
+    # drift in one step. Scope is ONLY ${GITREPO_DIR}: we cd'd here at clone time
+    # and never touch ${CONFIG_DIR}. origin was already fetched above.
+    #
+    # If the checkout was genuinely AHEAD (local commits not on origin), reset
+    # --hard DISCARDS them. That is correct for this addon: local commits are
+    # only ever made by the PUSH step, and a run always PULLs before it PUSHes,
+    # so an ahead-count here means a previous push failed to land - surface it
+    # loudly rather than silently dropping work.
+    if [ "${AHEAD}" -gt 0 ]; then
+        log_warn "checkout is ${AHEAD} commit(s) AHEAD of origin/${BRANCH}; hard-aligning to origin will DISCARD them. If a prior PUSH failed, those changes are re-derived from ${CONFIG_DIR} in STEP 2."
     fi
+    log "Hard-aligning checkout to origin/${BRANCH} (reset --hard + clean -fd, scoped to ${GITREPO_DIR})..."
+    git reset --hard "origin/${BRANCH}" || fail "git reset --hard origin/${BRANCH} failed"
+    git clean -fd || fail "git clean -fd failed"
 
-    # Mirror the pulled checkout state INTO /config (honouring excludes).
+    # Now that the checkout matches origin on a CLEAN base, (re)write the managed
+    # .gitignore so runtime files are ignored inside the checkout. Doing it here
+    # (post-align, pre-rsync) means it can never poison the alignment above, and
+    # the PUSH step commits it as tracked content later.
+    {
+        echo "# Managed by the git-sync addon - do not edit by hand."
+        for e in "${EXCLUDES[@]}"; do
+            echo "${e}"
+        done
+    } > "${GITREPO_DIR}/.gitignore"
+
+    # Mirror the aligned checkout state INTO /config (honouring excludes).
     # NO --delete on PULL by design: the pull only creates/updates files that
     # exist in the repo checkout. It can NEVER delete a file that lives only in
     # /config (unversioned HA runtime: .storage, *.db, secrets.yaml, manually
