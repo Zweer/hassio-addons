@@ -64,11 +64,14 @@ async function main(): Promise<void> {
     `[instagram-archiver] Archiving ${config.accounts.length} account(s) → ${config.outputDir}`,
   );
 
-  const provider = new StoryNavigationProvider(
-    config.maxDownloadBytes !== undefined
-      ? { maxDownloadBytes: config.maxDownloadBytes }
-      : {},
-  );
+  const providerOptions: { maxDownloadBytes?: number; byparrUrl?: string } = {};
+  if (config.maxDownloadBytes !== undefined) {
+    providerOptions.maxDownloadBytes = config.maxDownloadBytes;
+  }
+  if (config.byparrUrl !== undefined) {
+    providerOptions.byparrUrl = config.byparrUrl;
+  }
+  const provider = new StoryNavigationProvider(providerOptions);
   const storage = new Storage({
     outputDir: config.outputDir,
     requestDelayMs: config.requestDelayMs,

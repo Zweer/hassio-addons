@@ -1,0 +1,7 @@
+# One public Instagram username per line.
+# Blank lines and everything after a '#' are ignored.
+#
+# Copy this file to accounts.txt and edit it (accounts.txt is gitignored).
+
+nasa
+natgeo   # inline comments are allowed too

@@ -27,6 +27,9 @@ if [ -f "$HASSIO_CONFIG" ]; then
   export IA_MAX_DOWNLOAD_MB
   IA_MAX_DOWNLOAD_MB=$(jq -r '.max_download_mb // empty' "$HASSIO_CONFIG")
 
+  export IA_BYPARR_URL
+  IA_BYPARR_URL=$(jq -r '.byparr_url // empty' "$HASSIO_CONFIG")
+
 elif [ -f "$LOCAL_ENV" ]; then
   echo "[instagram-archiver] Running locally — reading config from .env"
   while IFS= read -r line; do

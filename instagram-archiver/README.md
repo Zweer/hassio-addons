@@ -47,6 +47,28 @@ limitation carries over from that source:
   Tampermonkey userscript that captures posts from a logged-in browser and
   pushes them to this addon — see [Shared ingest endpoint](#shared-ingest-endpoint-future)).
 
+## Cloudflare / Byparr requirement
+
+Since late 2026 StoryNavigation sits behind a Cloudflare **managed challenge**,
+so a plain HTTP session is rejected. The underlying
+[`@zweer/storynavigation-client`](https://github.com/Zweer/storynavigation-client)
+(v1.1.0+) clears it through an injectable solver: a reachable **Byparr**
+instance, which exposes a FlareSolverr-compatible API.
+
+Point the addon at a running Byparr with the new option:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `byparr_url` | — | Base URL of a reachable Byparr instance, e.g. `http://<host>:8191`. Leave empty to keep the previous behaviour (the client fails fast if a challenge is hit). |
+
+> ⚠️ **Byparr is heavy.** It runs a real stealth browser (Camoufox/Firefox) and
+> wants ~1 GB of RAM plus fast scratch storage — an RPi4/4 GB running Home
+> Assistant generally **cannot** also host it. Run Byparr on a more capable
+> machine and set `byparr_url` to its address. For the maintainer's own
+> self-hosted, on-demand setup (Byparr + the archiver on a PC, output written
+> to the Pi over Samba), see the [`local/`](./local) folder — that folder is a
+> development convenience, not part of the installable addon.
+
 ## Folder layout
 
 ```
@@ -92,6 +114,7 @@ source: storynavigation
 | `discord_notify_empty` | `false` | Send a message even when nothing new was found. |
 | `request_delay_ms` | `1500` | Delay between requests to be gentle on the source. |
 | `output_dir` | `/share/instagram` | Where to store the archive. |
+| `byparr_url` | — | Base URL of a reachable Byparr instance (see [Cloudflare / Byparr requirement](#cloudflare--byparr-requirement)). |
 
 Triggering is external: a HA automation/cron calls the addon once a day.
 

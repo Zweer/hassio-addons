@@ -3,6 +3,8 @@
  * populates from either the Hassio `options.json` or a local `.env`.
  */
 
+import { readFileSync } from 'node:fs';
+
 export interface Config {
   /** Public Instagram usernames to archive. */
   accounts: string[];
@@ -16,6 +18,12 @@ export interface Config {
   outputDir: string;
   /** Max bytes for a single media download (undefined → client default). */
   maxDownloadBytes?: number;
+  /**
+   * Byparr (FlareSolverr-compatible) base URL used to clear StoryNavigation's
+   * Cloudflare challenge. Optional, no default — unset preserves the library's
+   * fail-fast behaviour when a challenge is hit without a solver.
+   */
+  byparrUrl?: string;
 }
 
 function parseAccounts(raw: string | undefined): string[] {
@@ -38,6 +46,18 @@ function parseAccounts(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Parse an accounts file (one username per line). Strips from the first `#`
+ * comment marker, trims, and drops blank lines — same discipline as `run.sh`'s
+ * local `.env` reader.
+ */
+function parseAccountsFile(raw: string): string[] {
+  return raw
+    .split('\n')
+    .map((line) => line.split('#')[0].trim())
+    .filter(Boolean);
+}
+
 function parseBool(raw: string | undefined, fallback: boolean): boolean {
   if (raw === undefined || raw === '') return fallback;
   return /^(1|true|yes|on)$/i.test(raw.trim());
@@ -48,9 +68,33 @@ function parseInt10(raw: string | undefined, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Resolve the accounts list. `IA_ACCOUNTS_FILE` (used only by `local/`) wins
+ * over `IA_ACCOUNTS` when it is set, readable, and non-empty; any read error or
+ * empty result warns and falls back to `IA_ACCOUNTS`. When unset, this behaves
+ * identically to `parseAccounts(IA_ACCOUNTS)`.
+ */
+function resolveAccounts(env: NodeJS.ProcessEnv): string[] {
+  const filePath = env.IA_ACCOUNTS_FILE?.trim();
+  if (filePath) {
+    try {
+      const fromFile = parseAccountsFile(readFileSync(filePath, 'utf8'));
+      if (fromFile.length > 0) return fromFile;
+      console.warn(
+        `[instagram-archiver] IA_ACCOUNTS_FILE (${filePath}) had no usable accounts — falling back to IA_ACCOUNTS.`,
+      );
+    } catch (err) {
+      console.warn(
+        `[instagram-archiver] Could not read IA_ACCOUNTS_FILE (${filePath}): ${err instanceof Error ? err.message : String(err)} — falling back to IA_ACCOUNTS.`,
+      );
+    }
+  }
+  return parseAccounts(env.IA_ACCOUNTS);
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config: Config = {
-    accounts: parseAccounts(env.IA_ACCOUNTS),
+    accounts: resolveAccounts(env),
     requestDelayMs: parseInt10(env.IA_REQUEST_DELAY_MS, 1500),
     notifyEmpty: parseBool(env.IA_NOTIFY_EMPTY, false),
     outputDir: (env.IA_OUTPUT_DIR ?? '/share/instagram').trim(),
@@ -64,6 +108,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const n = Number.parseInt(maxMb, 10);
     if (Number.isFinite(n) && n > 0) config.maxDownloadBytes = n * 1024 * 1024;
   }
+
+  const byparr = env.IA_BYPARR_URL?.trim();
+  if (byparr) config.byparrUrl = byparr;
 
   return config;
 }

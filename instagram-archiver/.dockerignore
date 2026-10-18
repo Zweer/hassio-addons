@@ -1,0 +1,9 @@
+# Keep the build context lean. The Dockerfile only COPYs package.json,
+# package-lock.json, tsconfig.json, tsdown.config.ts, src/, and run.sh — none of
+# the paths below are needed by the build.
+local/
+.agents/
+test/
+*.md
+node_modules
+dist

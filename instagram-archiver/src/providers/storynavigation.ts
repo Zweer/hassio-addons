@@ -1,6 +1,7 @@
 import {
   type Post,
   StoryNavigationClient,
+  type StoryNavigationClientOptions,
 } from '@zweer/storynavigation-client';
 import type { IngestMedia, IngestPost, IngestProvider } from '../types.js';
 
@@ -59,12 +60,15 @@ export class StoryNavigationProvider implements IngestProvider {
   readonly name = 'storynavigation';
   private readonly client: StoryNavigationClient;
 
-  constructor(options: { maxDownloadBytes?: number } = {}) {
-    this.client = new StoryNavigationClient(
-      options.maxDownloadBytes !== undefined
-        ? { maxDownloadBytes: options.maxDownloadBytes }
-        : {},
-    );
+  constructor(options: { maxDownloadBytes?: number; byparrUrl?: string } = {}) {
+    const clientOptions: StoryNavigationClientOptions = {};
+    if (options.maxDownloadBytes !== undefined) {
+      clientOptions.maxDownloadBytes = options.maxDownloadBytes;
+    }
+    if (options.byparrUrl !== undefined) {
+      clientOptions.byparrUrl = options.byparrUrl;
+    }
+    this.client = new StoryNavigationClient(clientOptions);
   }
 
   async listPosts(userName: string): Promise<IngestPost[]> {

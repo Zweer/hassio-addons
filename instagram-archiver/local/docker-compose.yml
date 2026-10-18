@@ -1,0 +1,67 @@
+# Maintainer's self-hosted, on-demand setup (NOT the Home Assistant addon).
+#
+# Brings a Byparr Cloudflare solver up healthy, then runs ONE archive pass with
+# the addon's own image (built from ../Dockerfile — single source of truth) and
+# exits. Output lands in whatever `IA_HOST_OUTPUT` points at (e.g. an OS-level
+# Samba mount of the Pi's /share). See ./README.md.
+#
+# Usage:
+#   cp .env.example .env            # tweak as needed
+#   cp accounts.txt.example accounts.txt
+#   docker compose up               # Byparr → one pass → exit
+
+services:
+  byparr:
+    # Self-hosted anti-bot (Cloudflare) solver, FlareSolverr-compatible API.
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: ia-byparr
+    restart: unless-stopped
+    ports:
+      - '8191:8191'
+    environment:
+      # Pin locale/timezone so the container skips the egress-IP GeoIP lookup.
+      BROWSER_LOCALE: en-US
+      BROWSER_TIMEZONE: Europe/Rome
+    # Byparr does a lot of disk I/O; offload /tmp and /cache to RAM. Both mounts
+    # MUST be `exec` and ~2G — the stock 512M non-exec mount makes Firefox fail
+    # (see the storynavigation-client README).
+    shm_size: '1gb'
+    tmpfs:
+      - /tmp:exec,mode=1777,size=2G
+      - /cache:exec,mode=1777,size=2G
+    healthcheck:
+      # Probe the FlareSolverr endpoint. The image's http client is not
+      # guaranteed, so try curl then fall back to wget.
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS http://localhost:8191/ || wget -q -O- http://localhost:8191/ || exit 1',
+        ]
+      start_period: 40s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  archiver:
+    # Reuse the addon's own Dockerfile and source tree — one image, one source
+    # of truth. No divergent second build.
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ia-archiver
+    env_file: .env
+    environment:
+      IA_BYPARR_URL: http://byparr:8191
+      IA_OUTPUT_DIR: /archive
+      IA_ACCOUNTS_FILE: /app/accounts.txt
+    depends_on:
+      byparr:
+        condition: service_healthy
+    volumes:
+      - ./accounts.txt:/app/accounts.txt:ro
+      - ${IA_HOST_OUTPUT:-./archive}:/archive
+    # Override the image CMD (/run.sh). In this image neither /data/options.json
+    # (Hassio) nor /app/.env exists, so run.sh would hit its "No config found"
+    # branch and exit 1. All config comes from the injected IA_* env instead, so
+    # we run node directly against the pre-built bundle.
+    entrypoint: ['node', 'dist/index.mjs']
