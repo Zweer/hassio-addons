@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/Zweer/hassio-addons/compare/instagram-archiver-v1.1.0...instagram-archiver-v1.2.0) (2026-10-23)
+
+
+### Features
+
+* **instagram-archiver:** :sparkles: support Cloudflare solver + add local self-hosted compose ([b531937](https://github.com/Zweer/hassio-addons/commit/b531937dcfee6bcc1a9d1b7272c61622baefcb25))
+
+
+### Bug Fixes
+
+* **instagram-archiver:** bump storynavigation-client to 1.1.1 to fix expired image URLs ([8ebeb34](https://github.com/Zweer/hassio-addons/commit/8ebeb34f43352f1748eba476853aedb734a6c58d))
+* **instagram-archiver:** make local setup robust to slow Byparr cold-start ([bb81561](https://github.com/Zweer/hassio-addons/commit/bb8156172fb5a9ebd44ce79cf69842bd93d9076f))
+
 ## [1.1.0](https://github.com/Zweer/hassio-addons/compare/instagram-archiver-v1.0.0...instagram-archiver-v1.1.0) (2026-09-23)
 
 
