@@ -60,6 +60,7 @@ Point the addon at a running Byparr with the new option:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `byparr_url` | — | Base URL of a reachable Byparr instance, e.g. `http://<host>:8191`. Leave empty to keep the previous behaviour (the client fails fast if a challenge is hit). |
+| `byparr_timeout_ms` | — (client default `60000`) | Max time Byparr may spend on a single solve (`IA_BYPARR_TIMEOUT_MS`). Raise it for a slow cold-start solve — the stealth browser's first solve can take 2-3 min under load. |
 
 > ⚠️ **Byparr is heavy.** It runs a real stealth browser (Camoufox/Firefox) and
 > wants ~1 GB of RAM plus fast scratch storage — an RPi4/4 GB running Home
@@ -115,6 +116,7 @@ source: storynavigation
 | `request_delay_ms` | `1500` | Delay between requests to be gentle on the source. |
 | `output_dir` | `/share/instagram` | Where to store the archive. |
 | `byparr_url` | — | Base URL of a reachable Byparr instance (see [Cloudflare / Byparr requirement](#cloudflare--byparr-requirement)). |
+| `byparr_timeout_ms` | — (client default `60000`) | Max time (ms) Byparr may spend on a single solve (`IA_BYPARR_TIMEOUT_MS`). Raise it when a cold solve is slow (see [Cloudflare / Byparr requirement](#cloudflare--byparr-requirement)). |
 
 Triggering is external: a HA automation/cron calls the addon once a day.
 

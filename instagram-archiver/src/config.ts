@@ -24,6 +24,13 @@ export interface Config {
    * fail-fast behaviour when a challenge is hit without a solver.
    */
   byparrUrl?: string;
+  /**
+   * Max time (ms) Byparr may spend on a single solve, sent as `maxTimeout`.
+   * Optional, no default — unset preserves the client's own 60s default. Raise
+   * it for a slow cold-start solve (the stealth browser can take 2-3 min under
+   * load) so the request does not abort before Byparr finishes.
+   */
+  byparrTimeoutMs?: number;
 }
 
 function parseAccounts(raw: string | undefined): string[] {
@@ -111,6 +118,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
   const byparr = env.IA_BYPARR_URL?.trim();
   if (byparr) config.byparrUrl = byparr;
+
+  const byparrTimeout = env.IA_BYPARR_TIMEOUT_MS?.trim();
+  if (byparrTimeout) {
+    const n = Number.parseInt(byparrTimeout, 10);
+    if (Number.isFinite(n) && n > 0) config.byparrTimeoutMs = n;
+  }
 
   return config;
 }

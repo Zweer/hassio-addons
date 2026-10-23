@@ -1,4 +1,5 @@
 import {
+  ByparrSolver,
   type Post,
   StoryNavigationClient,
   type StoryNavigationClientOptions,
@@ -60,13 +61,30 @@ export class StoryNavigationProvider implements IngestProvider {
   readonly name = 'storynavigation';
   private readonly client: StoryNavigationClient;
 
-  constructor(options: { maxDownloadBytes?: number; byparrUrl?: string } = {}) {
+  constructor(
+    options: {
+      maxDownloadBytes?: number;
+      byparrUrl?: string;
+      byparrTimeoutMs?: number;
+    } = {},
+  ) {
     const clientOptions: StoryNavigationClientOptions = {};
     if (options.maxDownloadBytes !== undefined) {
       clientOptions.maxDownloadBytes = options.maxDownloadBytes;
     }
     if (options.byparrUrl !== undefined) {
-      clientOptions.byparrUrl = options.byparrUrl;
+      // `byparrUrl` is a convenience that builds a ByparrSolver with the
+      // client's default 60s solve timeout. When a longer timeout is requested
+      // (slow cold-start solve), construct the ByparrSolver explicitly so we
+      // can raise `maxTimeoutMs`; otherwise keep the simple `byparrUrl` wiring.
+      if (options.byparrTimeoutMs !== undefined) {
+        clientOptions.solver = new ByparrSolver({
+          baseUrl: options.byparrUrl,
+          maxTimeoutMs: options.byparrTimeoutMs,
+        });
+      } else {
+        clientOptions.byparrUrl = options.byparrUrl;
+      }
     }
     this.client = new StoryNavigationClient(clientOptions);
   }

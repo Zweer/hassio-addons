@@ -23,6 +23,22 @@ OS-level Samba mount of the Pi's `/share`.
 2. builds the **archiver** from the parent addon's `../Dockerfile` (same source
    tree — no divergent image) and runs **one archive pass**, then exits.
 
+## Cold-start note
+
+Byparr's **first** solve is slow: the stealth browser starts cold, and under
+host memory/CPU load that initial Cloudflare solve has been seen to take
+**2-3 minutes**. To keep a cold `docker compose up` reliable:
+
+- The compose healthcheck does a **real** FlareSolverr solve (a `request.get`
+  against `example.com`) and only reports `healthy` once Byparr proves it can
+  clear a challenge — so the archiver's `depends_on: service_healthy` no longer
+  fires while the browser is still warming up. The healthcheck timing is
+  generous (`start_period: 180s`, `timeout: 150s`) to allow for that cold solve.
+- `IA_BYPARR_TIMEOUT_MS` (in `.env`, default `180000`) raises the archiver's own
+  Byparr solve timeout above the client's 60s default, so the first real solve
+  doesn't abort before Byparr finishes. A fresh `cp .env.example .env` is
+  already set up for this.
+
 The archiver gets its config from environment variables injected by the compose
 file (`IA_BYPARR_URL`, `IA_OUTPUT_DIR`, `IA_ACCOUNTS_FILE`) plus your local
 `.env`. It bypasses the addon's `run.sh` (which expects Hassio's

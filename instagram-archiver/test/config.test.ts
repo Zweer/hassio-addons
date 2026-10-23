@@ -27,6 +27,35 @@ describe('loadConfig — byparrUrl', () => {
   });
 });
 
+describe('loadConfig — byparrTimeoutMs', () => {
+  it('sets byparrTimeoutMs when IA_BYPARR_TIMEOUT_MS is a valid positive int', () => {
+    // Arrange
+    const env = { IA_BYPARR_TIMEOUT_MS: '  180000  ' };
+
+    // Act
+    const config = loadConfig(env);
+
+    // Assert
+    expect(config.byparrTimeoutMs).toBe(180000);
+  });
+
+  it('leaves byparrTimeoutMs undefined when unset, empty, or invalid', () => {
+    // Arrange
+    const unset = loadConfig({});
+    const empty = loadConfig({ IA_BYPARR_TIMEOUT_MS: '   ' });
+    const nan = loadConfig({ IA_BYPARR_TIMEOUT_MS: 'abc' });
+    const zero = loadConfig({ IA_BYPARR_TIMEOUT_MS: '0' });
+    const negative = loadConfig({ IA_BYPARR_TIMEOUT_MS: '-5' });
+
+    // Act / Assert
+    expect(unset.byparrTimeoutMs).toBeUndefined();
+    expect(empty.byparrTimeoutMs).toBeUndefined();
+    expect(nan.byparrTimeoutMs).toBeUndefined();
+    expect(zero.byparrTimeoutMs).toBeUndefined();
+    expect(negative.byparrTimeoutMs).toBeUndefined();
+  });
+});
+
 describe('loadConfig — accounts resolution', () => {
   let dir: string;
   let warnSpy: ReturnType<typeof vi.spyOn>;

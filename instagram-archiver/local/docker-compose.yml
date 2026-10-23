@@ -30,16 +30,21 @@ services:
       - /tmp:exec,mode=1777,size=2G
       - /cache:exec,mode=1777,size=2G
     healthcheck:
-      # Probe the FlareSolverr endpoint. The image's http client is not
-      # guaranteed, so try curl then fall back to wget.
+      # Gate on a REAL FlareSolverr solve, not just the HTTP port: the port is
+      # up (and returns a 301) long before the stealth browser can actually
+      # clear a challenge, so a port-only probe fires `service_healthy` far too
+      # early. Instead POST a real `request.get` to /v1 against a cheap, fast
+      # site (example.com — NOT the real source) and require `"status":"ok"`.
+      # The image ships curl (not wget); keep the wget fallback for safety.
+      # A cold solve can take 2-3 min under load, so time this generously.
       test:
         [
           'CMD-SHELL',
-          'curl -fsS http://localhost:8191/ || wget -q -O- http://localhost:8191/ || exit 1',
+          'curl -fsS -m 150 -X POST http://localhost:8191/v1 -H "Content-Type: application/json" -d ''{"cmd":"request.get","url":"https://example.com","maxTimeout":120000}'' 2>/dev/null | grep -q ''"status":"ok"'' || wget -q -O- --timeout=150 --header="Content-Type: application/json" --post-data=''{"cmd":"request.get","url":"https://example.com","maxTimeout":120000}'' http://localhost:8191/v1 2>/dev/null | grep -q ''"status":"ok"'' || exit 1',
         ]
-      start_period: 40s
-      interval: 10s
-      timeout: 5s
+      start_period: 180s
+      interval: 20s
+      timeout: 150s
       retries: 5
 
   archiver:
