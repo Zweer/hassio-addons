@@ -17,11 +17,20 @@ OS-level Samba mount of the Pi's `/share`.
 
 ## How it works
 
-`docker compose up`:
+`make run` (see [Usage](#usage)):
 
 1. starts **Byparr** and waits until its healthcheck reports healthy;
 2. builds the **archiver** from the parent addon's `../Dockerfile` (same source
-   tree — no divergent image) and runs **one archive pass**, then exits.
+   tree — no divergent image) and runs **one archive pass**, then exits;
+3. tears the **whole stack** down once the archiver exits.
+
+Byparr has `restart: unless-stopped` so it stays up as a long-running solver.
+That means a plain `docker compose up` would leave Byparr running (and the
+command hanging) after the archiver's single pass finishes. The one-shot run
+uses `--abort-on-container-exit --exit-code-from archiver`, which stops every
+service as soon as the archiver exits and makes the command's exit code match
+the archiver's — so a failed pass surfaces as a non-zero exit. The `Makefile`
+wraps this so you don't have to remember the flags.
 
 ## Cold-start note
 
@@ -61,8 +70,17 @@ cd local
 cp .env.example .env                 # tweak delays, Discord webhook, IA_HOST_OUTPUT
 cp accounts.txt.example accounts.txt # one public username per line
 
-docker compose up                    # Byparr → one pass → exit
+make run                             # Byparr → one pass → whole stack exits
 ```
+
+Without the `Makefile`, the equivalent raw command is:
+
+```bash
+docker compose up --abort-on-container-exit --exit-code-from archiver
+```
+
+Other handy `make` targets: `make down` (stop and remove the stack), `make logs`
+(follow logs), `make build` (rebuild the archiver image without running).
 
 `accounts.txt`, `.env`, and `archive/` are gitignored.
 

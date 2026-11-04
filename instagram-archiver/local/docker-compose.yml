@@ -8,7 +8,13 @@
 # Usage:
 #   cp .env.example .env            # tweak as needed
 #   cp accounts.txt.example accounts.txt
-#   docker compose up               # Byparr → one pass → exit
+#   make run                        # Byparr → one pass → whole stack exits
+#
+# Or, without the Makefile, run it directly. Byparr has
+# `restart: unless-stopped`, so a plain `docker compose up` leaves it running
+# after the archiver exits and the command hangs. Use the one-shot flags so the
+# whole stack stops when the archiver finishes, propagating its exit code:
+#   docker compose up --abort-on-container-exit --exit-code-from archiver
 
 services:
   byparr:
