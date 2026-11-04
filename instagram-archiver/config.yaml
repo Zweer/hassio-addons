@@ -1,5 +1,5 @@
 name: Instagram Archiver
-version: 1.1.0
+version: 1.2.0
 slug: instagram-archiver
 description: >-
   Archives posts (images, videos, carousels + captions) from public Instagram
@@ -20,7 +20,7 @@ options:
   accounts: []
   request_delay_ms: 1500
   notify_empty: false
-  byparr_url: ""
+  byparr_url: ''
 schema:
   accounts:
     - str
