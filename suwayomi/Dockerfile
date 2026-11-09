@@ -1,4 +1,6 @@
-ARG BUILD_FROM=ghcr.io/suwayomi/suwayomi-server:stable
+# Pinned to a specific upstream stable tag (not the floating `stable` tag) so a
+# rebuild never silently pulls a new version. Dependabot bumps it via PRs.
+ARG BUILD_FROM=ghcr.io/suwayomi/suwayomi-server:v2.4.2366
 FROM ${BUILD_FROM}
 
 # Labels required by Home Assistant Supervisor
