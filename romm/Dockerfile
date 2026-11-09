@@ -8,7 +8,7 @@
 #
 # BUILD_FROM is pinned to a specific upstream tag by the CI build args so that a
 # rebuild never silently pulls a new major. Dependabot bumps it via PRs.
-ARG BUILD_FROM=ghcr.io/rommapp/romm:5.3.1
+ARG BUILD_FROM=ghcr.io/rommapp/romm:5.4.1
 FROM ${BUILD_FROM}
 
 # Labels required by the Home Assistant Supervisor.
