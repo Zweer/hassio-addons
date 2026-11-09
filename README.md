@@ -15,25 +15,6 @@ A persistent AI development workspace that runs [Kiro Crew](https://kiro.dev/cre
 - Optimized for RPi4 4GB
 - Access via Discord/Telegram while away
 
-### 💻 [Zed Remote](zed-remote/)
-
-SSH workspace for [Zed Remote Development](https://zed.dev/docs/remote-development) on your HA hardware.
-
-- Debian-based container (glibc) — compatible with Zed Remote server
-- SSH server with public key authentication
-- Persistent workspace, Zed server data, and SSH host keys
-- Works with Cloudflare Tunnel for remote access from anywhere
-- Access to HA config and shared storage from the workspace
-
-### ⚔️ [Lares Bot](lares-bot/)
-
-Automated strategy bot for Lares running 24/7 on your HA hardware.
-
-- Optimized build queue, faith powers, spying, and raids
-- Configurable polling interval (default 20s)
-- Discord webhook notifications
-- Local build — no CI needed, just `./deploy.sh`
-
 ### 📚 [Suwayomi](suwayomi/)
 
 Self-hosted manga reader server ([Suwayomi/Tachidesk](https://github.com/Suwayomi/Suwayomi-Server)) running on your HA hardware.

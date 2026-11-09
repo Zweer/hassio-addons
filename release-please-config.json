@@ -23,20 +23,6 @@
         "config.yaml"
       ]
     },
-    "zed-remote": {
-      "component": "zed-remote",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        "config.yaml"
-      ]
-    },
-    "lares-bot": {
-      "component": "lares-bot",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        "config.yaml"
-      ]
-    },
     "suwayomi": {
       "component": "suwayomi",
       "changelog-path": "CHANGELOG.md",
