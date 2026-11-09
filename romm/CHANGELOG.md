@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/Zweer/hassio-addons/compare/romm-v0.1.3...romm-v0.1.4) (2026-11-09)
+
+
+### Bug Fixes
+
+* **romm:** bump upstream image to 5.4.1 ([69ad695](https://github.com/Zweer/hassio-addons/commit/69ad695fcaf3604240aa462f487444d10131476c))
+
 ## [0.1.3](https://github.com/Zweer/hassio-addons/compare/romm-v0.1.2...romm-v0.1.3) (2026-09-23)
 
 
