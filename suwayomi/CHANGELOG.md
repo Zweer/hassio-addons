@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Zweer/hassio-addons/compare/suwayomi-v0.1.2...suwayomi-v0.1.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* **suwayomi:** pin upstream image to stable v2.4.2366 ([939b4bf](https://github.com/Zweer/hassio-addons/commit/939b4bf819d63f050e8199f611af6ed7279639e1))
+
 ## [0.1.2](https://github.com/Zweer/hassio-addons/compare/suwayomi-v0.1.1...suwayomi-v0.1.2) (2026-09-22)
 
 
