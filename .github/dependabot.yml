@@ -61,3 +61,15 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/instagram-archiver"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "fix(instagram-archiver)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
