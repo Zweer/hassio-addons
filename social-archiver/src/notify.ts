@@ -68,6 +68,30 @@ export class DiscordNotifier {
   }
 
   /**
+   * Join bullet lines into a single message that fits `MAX_MESSAGE`. When the
+   * full list would overflow, keep whole lines up to the cap and append a
+   * truncation marker rather than silently dropping content mid-line.
+   */
+  private capSummary(lines: string[]): string {
+    const full = lines.join('\n');
+    if (full.length <= MAX_MESSAGE) return full;
+
+    const marker = '… (troncato)';
+    const budget = MAX_MESSAGE - marker.length - 1; // room for "\n" + marker
+    const kept: string[] = [];
+    let used = 0;
+    for (const line of lines) {
+      const addition = kept.length === 0 ? line.length : line.length + 1; // +1 for "\n"
+      if (used + addition > budget) break;
+      kept.push(line);
+      used += addition;
+    }
+    // Guarantee progress even if the very first line is pathologically long.
+    if (kept.length === 0) return full.slice(0, MAX_MESSAGE);
+    return `${kept.join('\n')}\n${marker}`;
+  }
+
+  /**
    * Send the run summary across all sources.
    * - Nothing new and no errors → silent (unless `notifyEmpty`).
    * - Otherwise → one summary message grouped by source, plus a preview thread
@@ -83,9 +107,11 @@ export class DiscordNotifier {
     }
 
     // ─── Summary message, grouped by source ───
-    let summary: string;
+    // Each query and each error is its own bullet line (not comma-joined) so
+    // the summary reads as a list rather than a wall of text.
+    const lines: string[] = [];
     if (totalNew === 0) {
-      summary = '📭 Social Archiver: nessuna novità.';
+      lines.push('📭 Social Archiver: nessuna novità.');
     } else {
       const bySource = new Map<string, SourceResult[]>();
       for (const r of withNew) {
@@ -93,21 +119,23 @@ export class DiscordNotifier {
         list.push(r);
         bySource.set(r.source, list);
       }
-      const groups: string[] = [];
+      lines.push(`📥 Social Archiver — ${totalNew} nuovi elementi`);
       for (const [source, list] of bySource) {
         const count = list.reduce((s, r) => s + r.newItems, 0);
-        const parts = list.map((r) => `${r.target} (${r.newItems})`);
-        groups.push(`${sourceLabel(source)} — ${count}: ${parts.join(', ')}`);
+        lines.push(`${sourceLabel(source)} — ${count}:`);
+        for (const r of list) {
+          lines.push(`• ${r.target} (${r.newItems})`);
+        }
       }
-      summary = `📥 Social Archiver — ${totalNew} nuovi elementi\n${groups.join('\n')}`;
     }
     if (errored.length > 0) {
-      summary += `\n⚠️ Errori: ${errored
-        .map((r) => `${sourceLabel(r.source)}/${r.target} (${r.error})`)
-        .join(', ')}`;
+      lines.push('⚠️ Errori:');
+      for (const r of errored) {
+        lines.push(`• ${sourceLabel(r.source)}/${r.target} (${r.error})`);
+      }
     }
 
-    const messageId = await this.postMessage(summary);
+    const messageId = await this.postMessage(this.capSummary(lines));
 
     // ─── Per-target previews in a thread ───
     if (messageId && withNew.length > 0) {
