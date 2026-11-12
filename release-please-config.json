@@ -37,15 +37,15 @@
         "config.yaml"
       ]
     },
-    "instagram-archiver": {
-      "component": "instagram-archiver",
+    "git-sync": {
+      "component": "git-sync",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "config.yaml"
       ]
     },
-    "git-sync": {
-      "component": "git-sync",
+    "social-archiver": {
+      "component": "social-archiver",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "config.yaml"

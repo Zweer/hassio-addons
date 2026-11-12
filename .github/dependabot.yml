@@ -63,13 +63,26 @@ updates:
       - "docker"
 
   - package-ecosystem: "docker"
-    directory: "/instagram-archiver"
+    directory: "/social-archiver"
     schedule:
       interval: "weekly"
       day: "monday"
     commit-message:
-      prefix: "fix(instagram-archiver)"
+      prefix: "fix(social-archiver)"
       include: "scope"
     labels:
       - "dependencies"
       - "docker"
+
+  # npm (TypeScript deps of the social-archiver addon)
+  - package-ecosystem: "npm"
+    directory: "/social-archiver"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps(social-archiver)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
