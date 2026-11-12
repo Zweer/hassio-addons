@@ -26,6 +26,24 @@ const DEFAULT_USER_AGENT =
 const PAGE_SIZE = 25;
 /** Sentinel bookmark Pinterest returns when there are no further pages. */
 const END_BOOKMARK = '-end-';
+/**
+ * Anti-stall guard for pagination. Pinterest search pages are mixed (pins +
+ * story modules + ad units + suggestion carousels); the parser discards the
+ * non-pin modules, so a page can legitimately yield 0 usable pins — or 0 pins
+ * NEW to this query's `seen` set — while a valid `bookmark` still points at full
+ * pages further on. We therefore keep following the bookmark and stop only after
+ * this many CONSECUTIVE pages add zero new pins. One new pin resets the counter.
+ */
+const MAX_EMPTY_PAGES = 5;
+/**
+ * Session bootstrap retry policy. Byparr can return status `ok` while rendering
+ * a Cloudflare interstitial/challenge instead of the real search page, in which
+ * case `x-app-version` and/or the `csrftoken` cookie are absent. We retry the
+ * solve a bounded number of times with an increasing backoff before giving up.
+ */
+const SESSION_MAX_ATTEMPTS = 3;
+/** Base backoff (ms) between session solve attempts; grows per attempt. */
+const SESSION_RETRY_BACKOFF_MS = 2_000;
 
 /**
  * Progressive-mp4 video formats in descending preference. `V_EXP7` is the
@@ -98,6 +116,11 @@ interface ByparrSolution {
   };
 }
 
+/** Resolve after `ms` milliseconds. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Build the search page URL for a query (what Byparr renders). */
 export function searchPageUrl(query: string): string {
   return `${BASE}/search/pins/?q=${encodeURIComponent(query)}`;
@@ -151,6 +174,11 @@ export class PinterestProvider implements IngestProvider {
     const seen = new Set<string>();
     const related = new Set<string>();
     let bookmark: string | undefined;
+    // Count of consecutive pages that added zero pins NEW to `seen`. Covers both
+    // failure modes: a page of only story/ad modules (0 parsed pins) AND a page
+    // whose pins are all already in `seen` (all dedup'd). Resets to 0 whenever a
+    // page contributes at least one new pin.
+    let emptyPageRun = 0;
 
     // Paginate until we have enough pins or the bookmark signals the end.
     for (;;) {
@@ -158,16 +186,22 @@ export class PinterestProvider implements IngestProvider {
 
       for (const r of page.related) related.add(r);
 
+      let addedThisPage = 0;
       for (const pin of page.pins) {
         if (seen.has(pin.id)) continue;
         seen.add(pin.id);
+        addedThisPage++;
         items.push(this.toIngestItem(pin, session));
         if (items.length >= maxImages) break;
       }
 
+      emptyPageRun = addedThisPage === 0 ? emptyPageRun + 1 : 0;
+
       if (items.length >= maxImages) break;
       if (!page.bookmark || page.bookmark === END_BOOKMARK) break;
-      if (page.pins.length === 0) break; // defensive: no progress → stop
+      // Stop only after a run of consecutive zero-new-pin pages; a single empty
+      // page is expected (mixed modules / dedup) and must NOT end pagination.
+      if (emptyPageRun >= MAX_EMPTY_PAGES) break;
       bookmark = page.bookmark;
     }
 
@@ -182,6 +216,37 @@ export class PinterestProvider implements IngestProvider {
    * HTML body, which the solver's `solve()` does not expose.
    */
   private async solveSession(query: string): Promise<PinterestSession> {
+    // Byparr intermittently returns an ok-but-unusable solve (a Cloudflare
+    // interstitial, missing x-app-version and/or csrftoken). Retry a bounded
+    // number of times with an increasing backoff before surfacing the error.
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= SESSION_MAX_ATTEMPTS; attempt++) {
+      try {
+        return await this.solveSessionOnce(query);
+      } catch (err) {
+        lastError = err;
+        if (attempt < SESSION_MAX_ATTEMPTS) {
+          const backoff = SESSION_RETRY_BACKOFF_MS * attempt;
+          console.warn(
+            `[pinterest] session bootstrap attempt ${attempt}/${SESSION_MAX_ATTEMPTS} failed ` +
+              `(${err instanceof Error ? err.message : String(err)}); ` +
+              `retrying in ${backoff}ms`,
+          );
+          await sleep(backoff);
+        }
+      }
+    }
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`[pinterest] session bootstrap failed: ${String(lastError)}`);
+  }
+
+  /**
+   * A single Byparr solve attempt. Throws on non-ok HTTP, an unsolved page, a
+   * missing `x-app-version`, or a missing `csrftoken` cookie — each of which the
+   * retrying `solveSession()` treats as a transient failure.
+   */
+  private async solveSessionOnce(query: string): Promise<PinterestSession> {
     const base = (this.options.byparrUrl as string).replace(/\/+$/, '');
     const maxTimeout = this.options.byparrTimeoutMs ?? 60_000;
     const body = {
