@@ -1,0 +1,27 @@
+{
+  "name": "social-archiver-addon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Home Assistant addon: archive public social media (Instagram via StoryNavigation, Pinterest search) to /share.",
+  "type": "module",
+  "scripts": {
+    "build": "tsdown",
+    "start": "node dist/index.mjs",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@zweer/storynavigation-client": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsdown": "^0.23.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">= 22"
+  }
+}

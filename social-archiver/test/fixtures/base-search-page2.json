@@ -1,0 +1,37 @@
+{
+  "resource_response": {
+    "bookmark": "-end-",
+    "status": "success",
+    "data": {
+      "results": [
+        {
+          "type": "pin",
+          "id": "pin_only_736",
+          "title": "Easy Outdoor Cooking Ideas",
+          "grid_title": "Easy Outdoor Cooking Ideas",
+          "description": "Discover the joy of cooking in nature! From riverside recipes to wilderness meals.",
+          "created_at": "Sat, 10 Aug 2024 09:28:15 +0000",
+          "board": { "name": "comidas" },
+          "repin_count": null,
+          "images": {
+            "736x": {
+              "width": 720,
+              "height": 1280,
+              "url": "https://i.pinimg.com/736x/3e/b0/22/3eb022746c74860d889a6bc56734b674.jpg"
+            }
+          }
+        },
+        {
+          "type": "story",
+          "id": "not_a_pin_should_be_skipped"
+        },
+        {
+          "type": "pin",
+          "id": "pin_no_media_should_be_skipped",
+          "created_at": "Mon, 01 Jan 2024 00:00:00 +0000"
+        }
+      ],
+      "rankedGuides": []
+    }
+  }
+}

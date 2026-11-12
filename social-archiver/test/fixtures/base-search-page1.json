@@ -1,0 +1,102 @@
+{
+  "resource_response": {
+    "bookmark": "BOOKMARK_PAGE_2",
+    "status": "success",
+    "data": {
+      "results": [
+        {
+          "type": "pin",
+          "id": "e1_AfqPShy7-ISZhFLIA8mogBpsA1D941jdxxKVhzvNLQVAyOlBbH1D",
+          "title": "Hot Honey Garlic Chicken Bowls | Easy Sticky Chicken Rice Bowl",
+          "grid_title": "Hot Honey Garlic Chicken Bowls | Easy Sticky Chicken Rice Bowl",
+          "description": "Looking for an easy, flavorful dinner? These Hot Honey Garlic Chicken Bowls are sticky, sweet, spicy, and incredibly juicy!",
+          "created_at": "Sat, 24 Oct 2026 01:22:29 +0000",
+          "board": {
+            "name": "Easy & Delicious Recipes"
+          },
+          "repin_count": null,
+          "aggregated_pin_data": {
+            "aggregated_stats": {
+              "saves": 4242
+            }
+          },
+          "images": {
+            "orig": {
+              "width": 1024,
+              "height": 1536,
+              "url": "https://i.pinimg.com/originals/f1/76/de/f176de713aabe92a2eabdd03c5ef69d0.png"
+            },
+            "736x": {
+              "width": 736,
+              "height": 1104,
+              "url": "https://i.pinimg.com/736x/f1/76/de/f176de713aabe92a2eabdd03c5ef69d0.jpg"
+            }
+          }
+        },
+        {
+          "type": "pin",
+          "id": "e1_AfqPShz4aWBJaiCQsDaFEyaLc0nx5DZuWe_5eGu-jn9VRIXzXKH6",
+          "title": "Cook with Sue",
+          "description": " ",
+          "created_at": "Sat, 13 Aug 2022 00:18:35 +0000",
+          "board": {
+            "name": "Pins by you"
+          },
+          "repin_count": 5,
+          "images": {
+            "orig": {
+              "width": 1080,
+              "height": 1920,
+              "url": "https://i.pinimg.com/originals/b7/be/39/b7be39d6e549309df0067f9c18965368.jpg"
+            }
+          },
+          "story_pin_data": {
+            "pages": [
+              {
+                "blocks": [
+                  {
+                    "type": null,
+                    "video": {
+                      "video_list": {
+                        "V_EXP4": {
+                          "width": 1080,
+                          "height": 1920,
+                          "duration": 8966,
+                          "url": "https://v1.pinimg.com/videos/mc/expMp4/d6/20/b3/d620b3ac91fab04f0abad07a9a8f9542_t2.mp4"
+                        },
+                        "V_EXP3": {
+                          "width": 1080,
+                          "height": 1920,
+                          "duration": 8966,
+                          "url": "https://v1.pinimg.com/videos/mc/expMp4/d6/20/b3/d620b3ac91fab04f0abad07a9a8f9542_t1.mp4"
+                        },
+                        "V_EXP7": {
+                          "width": 1080,
+                          "height": 1920,
+                          "duration": 8966,
+                          "url": "https://v1.pinimg.com/videos/mc/720p/d6/20/b3/d620b3ac91fab04f0abad07a9a8f9542.mp4"
+                        },
+                        "V_HLSV3_MOBILE": {
+                          "width": 1080,
+                          "height": 1920,
+                          "duration": 8966,
+                          "url": "https://v1.pinimg.com/videos/mc/hls/d6/20/b3/d620b3ac91fab04f0abad07a9a8f9542.m3u8"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "rankedGuides": [
+        { "term": "food recipes", "display": "Food" },
+        { "term": "dinner recipes", "display": "Dinner" },
+        { "term": "healthy dinner recipes", "display": "Healthy dinner" },
+        { "term": "food recipes", "display": "Food (dup)" }
+      ]
+    }
+  }
+}

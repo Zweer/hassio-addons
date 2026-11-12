@@ -1,0 +1,8 @@
+# One Pinterest search query per line.
+# Blank lines and everything after a '#' are ignored.
+#
+# Copy this file to queries.txt and edit it (queries.txt is gitignored).
+# Leave queries.txt empty (just comments) to skip the Pinterest source.
+
+boardroom outfit women 2026
+minimalist living room   # inline comments are allowed too

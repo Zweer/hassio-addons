@@ -1,0 +1,81 @@
+# Maintainer's self-hosted, on-demand setup (NOT the Home Assistant addon).
+#
+# Brings a Byparr Cloudflare solver up healthy, then runs ONE archive pass with
+# the addon's own image (built from ../Dockerfile — single source of truth) and
+# exits. Output lands in whatever `SA_HOST_OUTPUT` points at (e.g. an OS-level
+# Samba mount of the Pi's /share). See ./README.md.
+#
+# Usage:
+#   cp .env.example .env            # tweak as needed
+#   cp accounts.txt.example accounts.txt
+#   cp queries.txt.example queries.txt
+#   make run                        # Byparr → one pass → whole stack exits
+#
+# Or, without the Makefile, run it directly. Byparr has
+# `restart: unless-stopped`, so a plain `docker compose up` leaves it running
+# after the archiver exits and the command hangs. Use the one-shot flags so the
+# whole stack stops when the archiver finishes, propagating its exit code:
+#   docker compose up --abort-on-container-exit --exit-code-from archiver
+
+services:
+  byparr:
+    # Self-hosted anti-bot (Cloudflare) solver, FlareSolverr-compatible API.
+    image: ghcr.io/thephaseless/byparr:latest
+    container_name: sa-byparr
+    restart: unless-stopped
+    ports:
+      - '8191:8191'
+    environment:
+      # Pin locale/timezone so the container skips the egress-IP GeoIP lookup.
+      BROWSER_LOCALE: en-US
+      BROWSER_TIMEZONE: Europe/Rome
+    # Byparr does a lot of disk I/O; offload /tmp and /cache to RAM. Both mounts
+    # MUST be `exec` and ~2G — the stock 512M non-exec mount makes Firefox fail
+    # (see the storynavigation-client README).
+    shm_size: '1gb'
+    tmpfs:
+      - /tmp:exec,mode=1777,size=2G
+      - /cache:exec,mode=1777,size=2G
+    healthcheck:
+      # Gate on a REAL FlareSolverr solve, not just the HTTP port: the port is
+      # up (and returns a 301) long before the stealth browser can actually
+      # clear a challenge, so a port-only probe fires `service_healthy` far too
+      # early. Instead POST a real `request.get` to /v1 against a cheap, fast
+      # site (example.com — NOT the real source) and require `"status":"ok"`.
+      # The image ships curl (not wget); keep the wget fallback for safety.
+      # A cold solve can take 2-3 min under load, so time this generously.
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS -m 150 -X POST http://localhost:8191/v1 -H "Content-Type: application/json" -d ''{"cmd":"request.get","url":"https://example.com","maxTimeout":120000}'' 2>/dev/null | grep -q ''"status":"ok"'' || wget -q -O- --timeout=150 --header="Content-Type: application/json" --post-data=''{"cmd":"request.get","url":"https://example.com","maxTimeout":120000}'' http://localhost:8191/v1 2>/dev/null | grep -q ''"status":"ok"'' || exit 1',
+        ]
+      start_period: 180s
+      interval: 20s
+      timeout: 150s
+      retries: 5
+
+  archiver:
+    # Reuse the addon's own Dockerfile and source tree — one image, one source
+    # of truth. No divergent second build.
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: sa-archiver
+    env_file: .env
+    environment:
+      SA_BYPARR_URL: http://byparr:8191
+      SA_OUTPUT_DIR: /archive
+      SA_INSTAGRAM_ACCOUNTS_FILE: /app/accounts.txt
+      SA_PINTEREST_QUERIES_FILE: /app/queries.txt
+    depends_on:
+      byparr:
+        condition: service_healthy
+    volumes:
+      - ./accounts.txt:/app/accounts.txt:ro
+      - ./queries.txt:/app/queries.txt:ro
+      - ${SA_HOST_OUTPUT:-./archive}:/archive
+    # Override the image CMD (/run.sh). In this image neither /data/options.json
+    # (Hassio) nor /app/.env exists, so run.sh would hit its "No config found"
+    # branch and exit 1. All config comes from the injected SA_* env instead, so
+    # we run node directly against the pre-built bundle.
+    entrypoint: ['node', 'dist/index.mjs']
