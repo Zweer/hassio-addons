@@ -575,4 +575,226 @@ describe('PinterestProvider.solveSession retry', () => {
       vi.useRealTimers();
     }
   });
+
+  it('solves the HOME page, not a per-query search page', async () => {
+    const bodies: string[] = [];
+    const fetchStub = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const urlStr = typeof input === 'string' ? input : input.toString();
+      if (urlStr.endsWith('/v1')) {
+        bodies.push(String(init?.body ?? ''));
+        return usable();
+      }
+      return new Response(endPage, { status: 200 });
+    });
+    const provider = new PinterestProvider({
+      byparrUrl: BYPARR,
+      fetch: fetchStub as unknown as typeof fetch,
+    });
+
+    await provider.fetch('boardroom outfit');
+
+    expect(bodies).toHaveLength(1);
+    const payload = JSON.parse(bodies[0]) as { url: string };
+    expect(payload.url).toBe('https://www.pinterest.com/');
+    // The per-query search page must NOT be the Byparr target anymore.
+    expect(payload.url).not.toContain('/search/pins/');
+  });
+});
+
+describe('PinterestProvider shared session (one solve per run, re-solve on stale)', () => {
+  const BYPARR = 'http://byparr.local:8191';
+
+  /** A usable solve carrying a given csrftoken, so re-solves are distinguishable. */
+  function usableWith(csrf: string): Response {
+    return new Response(
+      JSON.stringify({
+        status: 'ok',
+        solution: {
+          response: '<script id="__PWS_DATA__">{"appVersion":"20eebb3"}</script>',
+          userAgent: 'TestUA/1.0',
+          cookies: [{ name: 'csrftoken', value: csrf }],
+        },
+      }),
+      { status: 200 },
+    );
+  }
+
+  /** A one-pin search page that ends immediately. */
+  function onePage(id: string): string {
+    return JSON.stringify({
+      resource_response: {
+        bookmark: '-end-',
+        data: { results: [{ id, type: 'pin', images: { orig: { url: `https://i/${id}.jpg` } } }] },
+      },
+    });
+  }
+
+  it('does exactly ONE home solve across multiple queries in a run', async () => {
+    let v1Calls = 0;
+    const fetchStub = vi.fn(async (input: string | URL | Request) => {
+      const urlStr = typeof input === 'string' ? input : input.toString();
+      if (urlStr.endsWith('/v1')) {
+        v1Calls++;
+        return usableWith('CSRF123');
+      }
+      if (urlStr.includes('/resource/')) return new Response(onePage('p1'), { status: 200 });
+      return new Response(new Uint8Array([1]), { status: 200 });
+    });
+
+    const provider = new PinterestProvider({
+      byparrUrl: BYPARR,
+      fetch: fetchStub as unknown as typeof fetch,
+    });
+
+    // Three different queries on the same provider instance (as runPinterest does).
+    await provider.fetch('q1');
+    await provider.fetch('q2');
+    await provider.fetch('q3');
+
+    expect(v1Calls).toBe(1); // session solved once, reused for all three queries
+  });
+
+  it('is lazy: constructing a provider and never calling fetch() does NO solve', async () => {
+    const fetchStub = vi.fn(async () => usableWith('CSRF123'));
+    // eslint-disable-next-line no-new
+    new PinterestProvider({ byparrUrl: BYPARR, fetch: fetchStub as unknown as typeof fetch });
+    expect(fetchStub).not.toHaveBeenCalled(); // no fetch() → no /v1 solve
+  });
+
+  it('re-solves once on an HTTP 403 from BaseSearchResource and retries that query', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      let v1Calls = 0;
+      let resourceCalls = 0;
+      const fetchStub = vi.fn(async (input: string | URL | Request) => {
+        const urlStr = typeof input === 'string' ? input : input.toString();
+        if (urlStr.endsWith('/v1')) {
+          v1Calls++;
+          return usableWith(v1Calls === 1 ? 'STALE' : 'FRESH');
+        }
+        if (urlStr.includes('/resource/')) {
+          resourceCalls++;
+          // First resource call (q1 on the stale session) → 403; retry succeeds.
+          if (resourceCalls === 1) return new Response('forbidden', { status: 403 });
+          return new Response(onePage(`p${resourceCalls}`), { status: 200 });
+        }
+        return new Response(new Uint8Array([1]), { status: 200 });
+      });
+
+      const provider = new PinterestProvider({
+        byparrUrl: BYPARR,
+        fetch: fetchStub as unknown as typeof fetch,
+      });
+
+      // q1: 403 on stale session → one re-solve → retry succeeds.
+      const c1 = await provider.fetch('q1');
+      expect(c1.items.map((i) => i.id)).toEqual(['p2']);
+      expect(v1Calls).toBe(2); // initial solve + one re-solve
+
+      // q2: reuses the fresh session, no further solve.
+      const c2 = await provider.fetch('q2');
+      expect(c2.items.map((i) => i.id)).toEqual(['p3']);
+      expect(v1Calls).toBe(2); // bounded: no extra solve for q2
+
+      expect(warn).toHaveBeenCalledTimes(1); // the single re-solve is logged
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('surfaces the error without re-solving when the retry also hits 401', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      let v1Calls = 0;
+      const fetchStub = vi.fn(async (input: string | URL | Request) => {
+        const urlStr = typeof input === 'string' ? input : input.toString();
+        if (urlStr.endsWith('/v1')) {
+          v1Calls++;
+          return usableWith('CSRF123');
+        }
+        if (urlStr.includes('/resource/')) return new Response('nope', { status: 401 });
+        return new Response(new Uint8Array([1]), { status: 200 });
+      });
+
+      const provider = new PinterestProvider({
+        byparrUrl: BYPARR,
+        fetch: fetchStub as unknown as typeof fetch,
+      });
+
+      await expect(provider.fetch('q1')).rejects.toThrow(/HTTP 401/);
+      expect(v1Calls).toBe(2); // initial + exactly one re-solve, then give up
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does NOT re-solve on a non-stale error (HTTP 500)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      let v1Calls = 0;
+      const fetchStub = vi.fn(async (input: string | URL | Request) => {
+        const urlStr = typeof input === 'string' ? input : input.toString();
+        if (urlStr.endsWith('/v1')) {
+          v1Calls++;
+          return usableWith('CSRF123');
+        }
+        if (urlStr.includes('/resource/')) return new Response('boom', { status: 500 });
+        return new Response(new Uint8Array([1]), { status: 200 });
+      });
+
+      const provider = new PinterestProvider({
+        byparrUrl: BYPARR,
+        fetch: fetchStub as unknown as typeof fetch,
+      });
+
+      await expect(provider.fetch('q1')).rejects.toThrow(/HTTP 500/);
+      expect(v1Calls).toBe(1); // 500 is not stale-session → no re-solve
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does NOT cache a REJECTED solve: a later query re-attempts a fresh solve', async () => {
+    // A failed FIRST solve must not poison the rest of the run: the cached
+    // session promise is cleared on rejection, so the next query re-solves.
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      let v1Calls = 0;
+      const fetchStub = vi.fn(async (input: string | URL | Request) => {
+        const urlStr = typeof input === 'string' ? input : input.toString();
+        if (urlStr.endsWith('/v1')) {
+          v1Calls++;
+          // First solve exhausts all attempts (non-ok); later solves succeed.
+          return v1Calls <= 3
+            ? new Response('err', { status: 502 })
+            : usableWith('FRESH');
+        }
+        if (urlStr.includes('/resource/')) return new Response(onePage('p1'), { status: 200 });
+        return new Response(new Uint8Array([1]), { status: 200 });
+      });
+
+      const provider = new PinterestProvider({
+        byparrUrl: BYPARR,
+        fetch: fetchStub as unknown as typeof fetch,
+      });
+
+      // q1: first solve fails all SESSION_MAX_ATTEMPTS → throws.
+      const q1 = provider.fetch('q1').catch((e) => e);
+      await vi.runAllTimersAsync();
+      expect(await q1).toBeInstanceOf(Error);
+      const callsAfterQ1 = v1Calls;
+
+      // q2: must attempt a FRESH solve (not reuse the cached rejected promise).
+      const q2 = provider.fetch('q2');
+      await vi.runAllTimersAsync();
+      const c2 = await q2;
+      expect(v1Calls).toBeGreaterThan(callsAfterQ1); // a new solve was attempted
+      expect(c2.items.map((i) => i.id)).toEqual(['p1']); // and q2 succeeded
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });

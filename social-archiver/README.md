@@ -103,7 +103,7 @@ long ones (`SA_INSTAGRAM_ACCOUNTS_FILE`, `SA_PINTEREST_QUERIES_FILE`).
 | `output_dir` | `SA_OUTPUT_DIR` | archive root |
 | `max_download_mb` | `SA_MAX_DOWNLOAD_MB` | per-file cap |
 | `byparr_url` | `SA_BYPARR_URL` | FlareSolverr-compatible solver |
-| `byparr_timeout_ms` | `SA_BYPARR_TIMEOUT_MS` | raise for slow cold solve |
+| `byparr_timeout_ms` | `SA_BYPARR_TIMEOUT_MS` | app-side solve cap (home-page solve; cold start covered by healthcheck) |
 
 ## Development
 

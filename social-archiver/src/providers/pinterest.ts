@@ -6,7 +6,7 @@ import type { IngestCollection, IngestItem, IngestMedia, IngestProvider } from '
  * Pinterest's internal `/resource/BaseSearchResource/get/` JSON endpoint.
  *
  * ALL Pinterest-specific scraping lives in this file: the session bootstrap
- * (Byparr-rendered search page → `x-app-version` + `csrftoken`), the signed
+ * (Byparr-rendered HOME page → `x-app-version` + `csrftoken`), the signed
  * resource calls, the bookmark pagination, and the defensive JSON parser. A
  * future endpoint change touches only this module — the orchestrator, storage
  * and notifier speak the source-agnostic `Ingest*` types.
@@ -19,6 +19,17 @@ import type { IngestCollection, IngestItem, IngestMedia, IngestProvider } from '
 
 const BASE = 'https://www.pinterest.com';
 const SEARCH_RESOURCE = `${BASE}/resource/BaseSearchResource/get/`;
+/**
+ * Page Byparr renders to bootstrap a session. We solve the HOME page, NOT a
+ * per-query search page: the home page settles (`networkidle`) quickly, whereas
+ * the infinite-scroll search page NEVER reaches networkidle and burns Byparr's
+ * full `max_timeout` on every solve. The home solve returns the SAME usable
+ * session (`csrftoken` + `_pinterest_sess` cookies + `x-app-version` from the
+ * inline `__PWS_DATA__` JSON), which works for `BaseSearchResource` calls for
+ * any query — so one home solve serves the whole run. Verified live against a
+ * real Byparr 3.0.4 + Pinterest.
+ */
+const HOME_URL = `${BASE}/`;
 const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -37,13 +48,22 @@ const END_BOOKMARK = '-end-';
 const MAX_EMPTY_PAGES = 5;
 /**
  * Session bootstrap retry policy. Byparr can return status `ok` while rendering
- * a Cloudflare interstitial/challenge instead of the real search page, in which
+ * a Cloudflare interstitial/challenge instead of the real home page, in which
  * case `x-app-version` and/or the `csrftoken` cookie are absent. We retry the
  * solve a bounded number of times with an increasing backoff before giving up.
  */
 const SESSION_MAX_ATTEMPTS = 3;
 /** Base backoff (ms) between session solve attempts; grows per attempt. */
 const SESSION_RETRY_BACKOFF_MS = 2_000;
+/**
+ * How many times a SINGLE failing query may force a mid-run session re-solve.
+ * The shared session is created once and reused across all queries; if a query
+ * hits a stale-session failure (missing csrftoken, or HTTP 401/403 from
+ * BaseSearchResource) we re-solve the home session once, swap it in, and retry
+ * THAT query once. If it still fails we surface the error and move on. We never
+ * re-solve pre-emptively — only on an actual stale-session failure.
+ */
+const SESSION_RESOLVE_MAX = 1;
 
 /**
  * Progressive-mp4 video formats in descending preference. `V_EXP7` is the
@@ -116,12 +136,24 @@ interface ByparrSolution {
   };
 }
 
+/**
+ * Marker for a BaseSearchResource failure that indicates a stale/invalid
+ * session (an HTTP 401 or 403). The pagination loop lets this propagate so
+ * `fetch()` can re-solve the session once and retry the query. Other HTTP
+ * errors (e.g. 500) use a plain `Error` and are NOT treated as stale-session.
+ */
+class StaleSessionError extends Error {}
+
 /** Resolve after `ms` milliseconds. */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Build the search page URL for a query (what Byparr renders). */
+/**
+ * Build the search page URL for a query. The session is now solved from the
+ * HOME page, so Byparr no longer renders this — but the per-query JSON call
+ * still needs it as its `referer`/`source_url` (what Pinterest expects).
+ */
 export function searchPageUrl(query: string): string {
   return `${BASE}/search/pins/?q=${encodeURIComponent(query)}`;
 }
@@ -154,6 +186,14 @@ export class PinterestProvider implements IngestProvider {
   readonly name = 'pinterest';
   readonly kind = 'query' as const;
   private readonly fetchImpl: typeof fetch;
+  /**
+   * Shared, lazily-created Byparr session reused across every `fetch(query)`
+   * in a run. The first query that needs Pinterest triggers exactly one home
+   * solve; later queries reuse it. A stale-session failure swaps in a fresh
+   * one (see `refreshSession`). `undefined` until the first solve — so a run
+   * with zero queries (where `fetch` is never called) never solves at all.
+   */
+  private session?: Promise<PinterestSession>;
 
   constructor(private readonly options: PinterestProviderOptions = {}) {
     this.fetchImpl = options.fetch ?? fetch;
@@ -163,12 +203,41 @@ export class PinterestProvider implements IngestProvider {
     if (!this.options.byparrUrl) {
       throw new Error(
         '[pinterest] SA_BYPARR_URL is not configured — Pinterest needs a Byparr instance ' +
-          'to render the search page and clear Cloudflare.',
+          'to render the home page and clear Cloudflare.',
       );
     }
 
-    const session = await this.solveSession(query);
+    let session = await this.getSession();
 
+    // One mid-run re-solve budget for THIS query on a stale-session failure.
+    let resolves = 0;
+    for (;;) {
+      try {
+        return await this.collectQuery(query, session);
+      } catch (err) {
+        if (err instanceof StaleSessionError && resolves < SESSION_RESOLVE_MAX) {
+          resolves++;
+          console.warn(
+            `[pinterest:${query}] session looks stale (${err.message}); ` +
+              're-solving the home session and retrying this query once.',
+          );
+          session = await this.refreshSession();
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
+  /**
+   * Run the BFS/pagination for one query against a given session. Pulled out of
+   * `fetch` so the caller can retry it with a freshly re-solved session on a
+   * stale-session failure without re-running the solve retry loop.
+   */
+  private async collectQuery(
+    query: string,
+    session: PinterestSession,
+  ): Promise<IngestCollection> {
     const maxImages = this.options.maxImages ?? Number.POSITIVE_INFINITY;
     const items: IngestItem[] = [];
     const seen = new Set<string>();
@@ -209,20 +278,53 @@ export class PinterestProvider implements IngestProvider {
   }
 
   /**
-   * Bootstrap a Pinterest session through Byparr: render the search page to
-   * clear Cloudflare, then read `x-app-version` from the page HTML and the
+   * Return the shared session, solving it lazily on first use. Subsequent calls
+   * reuse the cached promise so a run does exactly one home solve. The cached
+   * value is a promise (not the resolved session) so concurrent first callers
+   * share a single in-flight solve.
+   *
+   * If the solve REJECTS, the rejected promise must NOT stay cached — otherwise
+   * a single early Byparr hiccup would poison every later query in the run,
+   * which would each reuse the failed promise and never re-solve. So we clear
+   * `this.session` on rejection, letting the next query attempt a fresh solve.
+   */
+  private getSession(): Promise<PinterestSession> {
+    if (!this.session) {
+      const pending = this.solveSession();
+      // Drop the cache on failure so the next query re-solves; keep it on success.
+      pending.catch(() => {
+        if (this.session === pending) this.session = undefined;
+      });
+      this.session = pending;
+    }
+    return this.session;
+  }
+
+  /**
+   * Force a fresh home solve, replacing the shared session, and return it. Used
+   * only when a query hits a stale-session failure; the new session stays in
+   * place for subsequent queries.
+   */
+  private refreshSession(): Promise<PinterestSession> {
+    this.session = this.solveSession();
+    return this.session;
+  }
+
+  /**
+   * Bootstrap a Pinterest session through Byparr: render the HOME page to clear
+   * Cloudflare, then read `x-app-version` from the page HTML and the
    * `csrftoken` cookie. Talks to Byparr's FlareSolverr-compatible `POST /v1`
    * directly (not the client's `ByparrSolver`) because we need the rendered
    * HTML body, which the solver's `solve()` does not expose.
    */
-  private async solveSession(query: string): Promise<PinterestSession> {
+  private async solveSession(): Promise<PinterestSession> {
     // Byparr intermittently returns an ok-but-unusable solve (a Cloudflare
     // interstitial, missing x-app-version and/or csrftoken). Retry a bounded
     // number of times with an increasing backoff before surfacing the error.
     let lastError: unknown;
     for (let attempt = 1; attempt <= SESSION_MAX_ATTEMPTS; attempt++) {
       try {
-        return await this.solveSessionOnce(query);
+        return await this.solveSessionOnce();
       } catch (err) {
         lastError = err;
         if (attempt < SESSION_MAX_ATTEMPTS) {
@@ -246,12 +348,12 @@ export class PinterestProvider implements IngestProvider {
    * missing `x-app-version`, or a missing `csrftoken` cookie — each of which the
    * retrying `solveSession()` treats as a transient failure.
    */
-  private async solveSessionOnce(query: string): Promise<PinterestSession> {
+  private async solveSessionOnce(): Promise<PinterestSession> {
     const base = (this.options.byparrUrl as string).replace(/\/+$/, '');
     const maxTimeout = this.options.byparrTimeoutMs ?? 60_000;
     const body = {
       cmd: 'request.get',
-      url: searchPageUrl(query),
+      url: HOME_URL,
       maxTimeout,
     };
 
@@ -272,7 +374,7 @@ export class PinterestProvider implements IngestProvider {
     const html = parsed.solution.response ?? '';
     const appVersion = extractAppVersion(html);
     if (!appVersion) {
-      throw new Error('[pinterest] Could not find x-app-version in the rendered search page.');
+      throw new Error('[pinterest] Could not find x-app-version in the rendered home page.');
     }
 
     const cookies = Array.isArray(parsed.solution.cookies) ? parsed.solution.cookies : [];
@@ -328,6 +430,14 @@ export class PinterestProvider implements IngestProvider {
       },
     });
     if (!res.ok) {
+      // 401/403 mean the session's auth was rejected (expired/invalid) — signal
+      // a stale session so `fetch` can re-solve once. Other codes (e.g. 500) are
+      // plain errors and surface to the orchestrator as today.
+      if (res.status === 401 || res.status === 403) {
+        throw new StaleSessionError(
+          `[pinterest] BaseSearchResource returned HTTP ${res.status}`,
+        );
+      }
       throw new Error(`[pinterest] BaseSearchResource returned HTTP ${res.status}`);
     }
 

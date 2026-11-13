@@ -52,9 +52,14 @@ host memory/CPU load that initial Cloudflare solve has been seen to take
   `healthy` once Byparr proves it can clear a challenge — so the archiver's
   `depends_on: service_healthy` no longer fires while the browser is still
   warming up. The timing is generous (`start_period: 180s`, `timeout: 150s`).
-- `SA_BYPARR_TIMEOUT_MS` (in `.env`, default `180000`) raises the archiver's own
-  Byparr solve timeout above the client's 60s default, so the first real solve
-  doesn't abort before Byparr finishes.
+  **This healthcheck (with its own timeout) is what absorbs the slow cold
+  start** — not the archiver's own solve timeout.
+- `SA_BYPARR_TIMEOUT_MS` (in `.env`, default `45000`) caps the archiver's own
+  Byparr solve. For Pinterest the archiver solves the **home page** — which
+  settles quickly — instead of the infinite-scroll search page that never
+  reaches `networkidle` and used to burn the full timeout on every query. Since
+  the cold start is already covered by the healthcheck above, this app-side
+  timeout can stay low (45s) without risking the initial unblock.
 
 The archiver gets its config from environment variables injected by the compose
 file (`SA_BYPARR_URL`, `SA_OUTPUT_DIR`, `SA_INSTAGRAM_ACCOUNTS_FILE`,

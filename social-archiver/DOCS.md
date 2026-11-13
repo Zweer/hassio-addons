@@ -35,7 +35,7 @@ discord_webhook_url: "https://discord.com/api/webhooks/…"
 output_dir: "/share/social-archiver"
 max_download_mb: 50
 byparr_url: "http://byparr:8191"
-byparr_timeout_ms: 180000
+byparr_timeout_ms: 45000
 ```
 
 | Option | Type | Default | Description |
@@ -51,7 +51,7 @@ byparr_timeout_ms: 180000
 | `output_dir` | str | `/share/social-archiver` | Archive root. |
 | `max_download_mb` | int | — | Per-file download cap (MB). |
 | `byparr_url` | url | — | FlareSolverr-compatible solver base URL. |
-| `byparr_timeout_ms` | int | — | Max ms per solve; raise for slow cold start. |
+| `byparr_timeout_ms` | int | — | App-side cap per solve. Pinterest solves the fast-settling home page; the slow cold start is covered by the compose healthcheck, so this can stay low. |
 
 ## Output
 
