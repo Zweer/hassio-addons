@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DiscordNotifier } from '../src/notify.js';
 import type { SourceResult } from '../src/types.js';
@@ -14,24 +17,36 @@ function result(partial: Partial<SourceResult> & Pick<SourceResult, 'source' | '
   };
 }
 
+interface Captured {
+  content: string;
+  /** Number of `files[n]` parts when the POST was multipart, else 0. */
+  attachments: number;
+}
+
 /**
- * Stub global fetch. Captures the JSON `content` posted to the summary webhook
- * (the first POST, with `wait=true`) and returns a message id so threading is
- * exercised but preview posts (no previews here) are skipped.
+ * Stub global fetch. Captures every POST to the webhook — both plain-JSON
+ * summaries and multipart summaries (with preview attachments) — recording the
+ * `content` text and how many files were attached.
  */
 function stubFetch() {
-  const summaries: string[] = [];
-  const stub = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof input === 'string' ? input : input.toString();
-    if (urlStr.includes('wait=true')) {
-      const body = JSON.parse(String(init?.body ?? '{}')) as { content?: string };
-      summaries.push(body.content ?? '');
-      return new Response(JSON.stringify({ id: 'msg-1' }), { status: 200 });
+  const posts: Captured[] = [];
+  const stub = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+    const body = init?.body;
+    if (body instanceof FormData) {
+      const payload = JSON.parse(String(body.get('payload_json') ?? '{}')) as { content?: string };
+      let attachments = 0;
+      for (const key of (body as FormData).keys()) {
+        if (key.startsWith('files[')) attachments++;
+      }
+      posts.push({ content: payload.content ?? '', attachments });
+    } else {
+      const parsed = JSON.parse(String(body ?? '{}')) as { content?: string };
+      posts.push({ content: parsed.content ?? '', attachments: 0 });
     }
     return new Response('{}', { status: 200 });
   });
   vi.stubGlobal('fetch', stub);
-  return { summaries };
+  return { posts, contents: () => posts.map((p) => p.content) };
 }
 
 afterEach(() => {
@@ -40,7 +55,7 @@ afterEach(() => {
 
 describe('DiscordNotifier.sendSummary formatting', () => {
   it('renders each query as its own bullet line, grouped by source', async () => {
-    const { summaries } = stubFetch();
+    const { contents } = stubFetch();
     const notifier = new DiscordNotifier(WEBHOOK);
 
     await notifier.sendSummary(
@@ -51,6 +66,7 @@ describe('DiscordNotifier.sendSummary formatting', () => {
       false,
     );
 
+    const summaries = contents();
     expect(summaries).toHaveLength(1);
     const lines = summaries[0].split('\n');
     expect(lines[0]).toBe('📥 Social Archiver — 98 nuovi elementi');
@@ -62,7 +78,7 @@ describe('DiscordNotifier.sendSummary formatting', () => {
   });
 
   it('renders each error as its own bullet line under ⚠️ Errori:', async () => {
-    const { summaries } = stubFetch();
+    const { contents } = stubFetch();
     const notifier = new DiscordNotifier(WEBHOOK);
 
     await notifier.sendSummary(
@@ -77,7 +93,7 @@ describe('DiscordNotifier.sendSummary formatting', () => {
       false,
     );
 
-    const lines = summaries[0].split('\n');
+    const lines = contents()[0].split('\n');
     expect(lines).toContain('⚠️ Errori:');
     expect(lines).toContain(
       '• Pinterest/short skirt office outfit ([pinterest] csrftoken cookie missing from the Byparr session.)',
@@ -88,7 +104,7 @@ describe('DiscordNotifier.sendSummary formatting', () => {
   });
 
   it('keeps the summary within the Discord length cap, marking truncation', async () => {
-    const { summaries } = stubFetch();
+    const { contents } = stubFetch();
     const notifier = new DiscordNotifier(WEBHOOK);
 
     const many: SourceResult[] = Array.from({ length: 200 }, (_, i) =>
@@ -97,11 +113,59 @@ describe('DiscordNotifier.sendSummary formatting', () => {
 
     await notifier.sendSummary(many, false);
 
-    expect(summaries[0].length).toBeLessThanOrEqual(1900);
-    expect(summaries[0]).toContain('… (troncato)');
+    const summary = contents()[0];
+    expect(summary.length).toBeLessThanOrEqual(1900);
+    expect(summary).toContain('… (troncato)');
     // Whole lines are kept (no line cut mid-way): last content line is a bullet.
-    const lines = summaries[0].split('\n');
+    const lines = summary.split('\n');
     expect(lines[lines.length - 1]).toBe('… (troncato)');
     expect(lines[lines.length - 2].startsWith('• ')).toBe(true);
+  });
+
+  it('attaches at most 10 real previews to a SINGLE summary post (no threads)', async () => {
+    const { posts } = stubFetch();
+    const notifier = new DiscordNotifier(WEBHOOK);
+
+    // Create real temp files so readFile succeeds and attachments are counted.
+    const dir = await mkdtemp(join(tmpdir(), 'notify-prev-'));
+    const mk = async (n: number, prefix: string) => {
+      const paths: string[] = [];
+      for (let i = 0; i < n; i++) {
+        const p = join(dir, `${prefix}${i}.jpg`);
+        await writeFile(p, new Uint8Array([0xff, 0xd8, 0xff]));
+        paths.push(p);
+      }
+      return paths;
+    };
+    const a = await mk(8, 'a');
+    const b = await mk(8, 'b');
+
+    await notifier.sendSummary(
+      [
+        result({ source: 'pinterest', target: 'alpha', newItems: 8, previews: a }),
+        result({ source: 'pinterest', target: 'beta', newItems: 8, previews: b }),
+      ],
+      false,
+    );
+
+    await rm(dir, { recursive: true, force: true });
+
+    // Exactly ONE request (no per-query threads), capped at 10 attachments.
+    expect(posts).toHaveLength(1);
+    expect(posts[0].attachments).toBe(10);
+    expect(posts[0].content).toContain('📥 Social Archiver — 16 nuovi elementi');
+  });
+
+  it('posts a single plain-JSON message when there are no previews', async () => {
+    const { posts } = stubFetch();
+    const notifier = new DiscordNotifier(WEBHOOK);
+
+    await notifier.sendSummary(
+      [result({ source: 'pinterest', target: 'alpha', newItems: 3 })],
+      false,
+    );
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0].attachments).toBe(0);
   });
 });

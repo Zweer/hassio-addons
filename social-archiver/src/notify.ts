@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises';
 import type { SourceResult } from './types.js';
 
 const MAX_MESSAGE = 1900; // stay under Discord's 2000-char limit
-const MAX_PREVIEWS_PER_TARGET = 4; // avoid huge uploads
-
-interface DiscordMessageResponse {
-  id: string;
-}
+// Discord accepts at most 10 attachments per message. Attach a few sample
+// previews to the summary message itself (option 4) rather than opening a
+// thread per query — a webhook cannot create threads in a normal text channel,
+// which made the old per-query thread posts fail with HTTP 400.
+const MAX_SUMMARY_PREVIEWS = 10;
 
 /** Human label for a source key. */
 function sourceLabel(source: string): string {
@@ -19,52 +19,73 @@ function sourceLabel(source: string): string {
 export class DiscordNotifier {
   constructor(private readonly webhookUrl: string) {}
 
-  /** Post a plain message. Returns the created message id (for threading). */
-  private async postMessage(content: string): Promise<string | undefined> {
-    // wait=true so the response includes the message id.
-    const url = this.appendQuery(this.webhookUrl, 'wait=true');
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: content.slice(0, MAX_MESSAGE) }),
-    });
-    if (!res.ok) {
-      console.warn(`[notify] summary post failed: HTTP ${res.status}`);
-      return undefined;
-    }
-    const body = (await res.json()) as DiscordMessageResponse;
-    return body.id;
-  }
+  /**
+   * Post the summary message, optionally with a few image previews attached to
+   * the SAME message. Uses multipart when there are previews, plain JSON
+   * otherwise. One request, no threads — so it works in any channel type.
+   */
+  private async postSummary(content: string, imagePaths: string[]): Promise<void> {
+    const text = content.slice(0, MAX_MESSAGE);
 
-  /** Post a message with image attachments into a thread. */
-  private async postToThread(
-    threadId: string,
-    content: string,
-    imagePaths: string[],
-  ): Promise<void> {
+    if (imagePaths.length === 0) {
+      const res = await fetch(this.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text }),
+      });
+      if (!res.ok) console.warn(`[notify] summary post failed: HTTP ${res.status}`);
+      return;
+    }
+
     const form = new FormData();
-    form.append('payload_json', JSON.stringify({ content: content.slice(0, MAX_MESSAGE) }));
+    form.append('payload_json', JSON.stringify({ content: text }));
+    let attached = 0;
     for (let i = 0; i < imagePaths.length; i++) {
       try {
         const bytes = await readFile(imagePaths[i]);
         form.append(
-          `files[${i}]`,
+          `files[${attached}]`,
           new Blob([new Uint8Array(bytes)], { type: 'image/jpeg' }),
           basename(imagePaths[i]),
         );
+        attached++;
       } catch {
         // preview file missing — skip it
       }
     }
-    const url = this.appendQuery(this.webhookUrl, `thread_id=${encodeURIComponent(threadId)}`);
-    const res = await fetch(url, { method: 'POST', body: form });
-    if (!res.ok) {
-      console.warn(`[notify] thread post failed: HTTP ${res.status}`);
+    // If every preview file was unreadable, fall back to a plain text post.
+    if (attached === 0) {
+      const res = await fetch(this.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text }),
+      });
+      if (!res.ok) console.warn(`[notify] summary post failed: HTTP ${res.status}`);
+      return;
     }
+
+    const res = await fetch(this.webhookUrl, { method: 'POST', body: form });
+    if (!res.ok) console.warn(`[notify] summary post failed: HTTP ${res.status}`);
   }
 
-  private appendQuery(url: string, query: string): string {
-    return url.includes('?') ? `${url}&${query}` : `${url}?${query}`;
+  /**
+   * Pick up to `MAX_SUMMARY_PREVIEWS` preview images across all targets,
+   * round-robin so no single target dominates the sample.
+   */
+  private pickPreviews(withNew: SourceResult[]): string[] {
+    const picked: string[] = [];
+    for (let round = 0; picked.length < MAX_SUMMARY_PREVIEWS; round++) {
+      let addedThisRound = false;
+      for (const r of withNew) {
+        if (r.previews.length > round) {
+          picked.push(r.previews[round]);
+          addedThisRound = true;
+          if (picked.length >= MAX_SUMMARY_PREVIEWS) break;
+        }
+      }
+      if (!addedThisRound) break; // no target has more previews at this depth
+    }
+    return picked;
   }
 
   /**
@@ -94,8 +115,8 @@ export class DiscordNotifier {
   /**
    * Send the run summary across all sources.
    * - Nothing new and no errors → silent (unless `notifyEmpty`).
-   * - Otherwise → one summary message grouped by source, plus a preview thread
-   *   per target that produced new items.
+   * - Otherwise → ONE summary message grouped by source, with a few sample
+   *   preview images attached to that same message (no threads).
    */
   async sendSummary(results: SourceResult[], notifyEmpty: boolean): Promise<void> {
     const withNew = results.filter((r) => r.newItems > 0);
@@ -135,20 +156,8 @@ export class DiscordNotifier {
       }
     }
 
-    const messageId = await this.postMessage(this.capSummary(lines));
-
-    // ─── Per-target previews in a thread ───
-    if (messageId && withNew.length > 0) {
-      for (const r of withNew) {
-        const previews = r.previews.slice(0, MAX_PREVIEWS_PER_TARGET);
-        if (previews.length === 0) continue;
-        const more = r.newItems > previews.length ? ` (+${r.newItems - previews.length})` : '';
-        await this.postToThread(
-          messageId,
-          `**${sourceLabel(r.source)} / ${r.target}** — ${r.newItems} nuovi${more}`,
-          previews,
-        );
-      }
-    }
+    // A few sample previews attached to the summary message itself.
+    const previews = this.pickPreviews(withNew);
+    await this.postSummary(this.capSummary(lines), previews);
   }
 }
