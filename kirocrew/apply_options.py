@@ -115,6 +115,10 @@ def ha_external_url() -> str:
 def write_atomic(path: Path, data: dict) -> None:
     tmp = path.with_name(f"{path.name}.tmp.{os.getpid()}")
     tmp.write_text(json.dumps(data, indent=2) + "\n")
+    # This runs as root; keep the file owned like its directory so run.sh's
+    # ownership check does not have to chown -R the whole home every boot.
+    st = path.parent.stat()
+    os.chown(tmp, st.st_uid, st.st_gid)
     os.replace(tmp, path)
 
 
