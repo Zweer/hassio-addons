@@ -89,11 +89,15 @@ def apply(cfg: dict, opts: dict, ha_external_url: str = "") -> dict:
 
 
 def secret_exports(opts: dict) -> list[str]:
-    return [
+    lines = [
         f"export {env}={shlex.quote(str(opts[name]))}"
         for name, env in SECRET_OPTIONS.items()
         if opts.get(name)
     ]
+    # Non-secret marker for run.sh's sign-in log line: it says WHICH method
+    # is configured, never anything derived from the key itself.
+    lines.append(f"ADDON_SIGNIN={'api-key' if opts.get('kiro_api_key') else 'none'}")
+    return lines
 
 
 def ha_external_url() -> str:

@@ -36,7 +36,16 @@ if [ -n "$(find "${HOME}" ! -user "${CREW_USER}" -print -quit)" ]; then
 fi
 
 log "Starting Kiro Crew gateway on port 5476"
-log "Sign in:   run 'kiro-login' in the add-on container"
+if [ "${ADDON_SIGNIN}" = "api-key" ]; then
+    log "Kiro sign-in: API key"
+elif setpriv --reuid="${CREW_USER}" --regid="${CREW_USER}" --init-groups -- \
+        kiro-cli whoami >/dev/null 2>&1; then
+    log "Kiro sign-in: kiro-cli login"
+else
+    log "WARNING: Kiro is not signed in, so agents cannot run. Set the" \
+        "'Kiro API Key' option and restart, or run 'kiro-login' in the add-on container."
+fi
+unset ADDON_SIGNIN
 log "Dashboard: run 'kiro-token' in the add-on container for a login link"
 
 cd "${HOME}"
