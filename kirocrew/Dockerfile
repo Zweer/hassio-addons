@@ -1,5 +1,9 @@
-ARG BUILD_FROM=ghcr.io/kirodotdev/kirocrew:stable
-FROM ${BUILD_FROM}
+# Node.js comes from the official image instead of nvm: per-arch, pinned and
+# reproducible, with no network fetch at build time. Dependabot bumps both
+# FROM lines (docker ecosystem on /kirocrew).
+FROM node:26.13.1-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS node
+
+FROM ghcr.io/kirodotdev/kirocrew:0.12.2@sha256:e5c09209758348ec658c45a06853d4faa3b19fb93c0699ab8eca9c39e32d569e
 
 # Labels required by Home Assistant Supervisor
 ARG BUILD_VERSION
@@ -11,43 +15,34 @@ LABEL \
     io.hass.name="Kiro Crew" \
     io.hass.description="Persistent AI development workspace"
 
-# HA addons run as root (Supervisor provides container-level isolation)
+# run.sh starts as root only to fix /data ownership, then drops to kirocrew.
 USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-ENV HOME=/home/kirocrew
 
-# Install runtime dependencies and tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        gh \
        vim-tiny \
        libatomic1 \
-       curl \
-       ca-certificates \
     && ln -sf /usr/bin/vim.tiny /usr/bin/vi \
     && rm -rf /var/lib/apt/lists/*
 
-# Install nvm + Node.js LTS for the kirocrew user
-ENV NVM_DIR=/home/kirocrew/.nvm
-RUN mkdir -p "$NVM_DIR" \
-    && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
-    && . "$NVM_DIR/nvm.sh" \
-    && nvm install --lts \
-    && nvm alias default lts/* \
-    && nvm cache clear \
-    && chown -R kirocrew:kirocrew "$NVM_DIR"
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && node --version && npm --version
 
-# Make node/npm available in PATH for all users
-ENV PATH="$NVM_DIR/versions/node/default/bin:$PATH"
-RUN ln -sf "$(find $NVM_DIR/versions/node -maxdepth 1 -type d | sort -V | tail -1)/bin/node" /usr/local/bin/node \
-    && ln -sf "$(find $NVM_DIR/versions/node -maxdepth 1 -type d | sort -V | tail -1)/bin/npm" /usr/local/bin/npm \
-    && ln -sf "$(find $NVM_DIR/versions/node -maxdepth 1 -type d | sort -V | tail -1)/bin/npx" /usr/local/bin/npx
+# One HOME for everybody: the gateway, `docker exec` shells and the helpers
+# all resolve ~/.kiro (Crew data) and ~/.local/share/kiro-cli (login) under
+# /data, so a login survives container recreation and lands in backups.
+ENV HOME=/data/home \
+    KIROCREW_ALLOW_UNSANDBOXED=1
+RUN usermod -d /data/home kirocrew
 
-# Copy our entrypoint
 COPY --chmod=755 run.sh /run.sh
-
-# HA maps /data as persistent storage
-VOLUME ["/data"]
+COPY --chmod=755 rootfs/usr/local/bin/ /usr/local/bin/
+COPY --chmod=644 apply_options.py /usr/local/lib/kirocrew-addon/apply_options.py
 
 ENTRYPOINT []
 CMD ["/run.sh"]

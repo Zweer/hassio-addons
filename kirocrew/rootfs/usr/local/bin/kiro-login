@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Sign kiro-cli in as the user the gateway runs as, with the same HOME, so the
+# login lands in /data/home/.local/share/kiro-cli where the gateway reads it.
+# Extra arguments go to `kiro-cli login` (for example --use-device-flow).
+set -euo pipefail
+export HOME=/data/home
+if [ "$(id -u)" -eq 0 ]; then
+    exec setpriv --reuid=kirocrew --regid=kirocrew --init-groups -- kiro-cli login "$@"
+fi
+exec kiro-cli login "$@"

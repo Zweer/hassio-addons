@@ -101,6 +101,9 @@ jobs:
           done
           echo "✓ All shell scripts valid"
 
+      - name: Unit tests (kirocrew)
+        run: python3 -m unittest discover -v kirocrew/tests
+
       - name: Lint Dockerfiles
         uses: hadolint/hadolint-action@v3.5.0
         with:
