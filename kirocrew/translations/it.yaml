@@ -1,10 +1,25 @@
 ---
 configuration:
-  session_pool_size:
-    name: Sessioni Concorrenti
+  session_timeout_secs:
+    name: Timeout Sessione Inattiva (secondi)
     description: >-
-      Numero massimo di sessioni agente simultanee. Mantieni a 1 per RPi4
-      con 4GB RAM. Ogni sessione usa ~500MB-1GB. Aumenta solo con 8GB+ RAM.
+      Una sessione agente inattiva viene chiusa dopo questi secondi,
+      liberando il suo processo kiro-cli. Valori bassi risparmiano RAM.
+  watchdog_rss_max_mb:
+    name: Limite Memoria Sessione (MiB)
+    description: >-
+      Ricicla una sessione inattiva che usa più di questa memoria.
+      Le sessioni occupate non vengono mai riciclate. 0 disattiva.
+  embedding_idle_evict_secs:
+    name: Scarica Modello Embedding Inattivo (secondi)
+    description: >-
+      Scarica dalla memoria il modello di embedding dopo questi secondi
+      senza uso. Si ricarica in pochi secondi. 0 lo tiene sempre caricato.
+  embedding_weight_repack:
+    name: Repack Pesi Modello Embedding
+    description: >-
+      Tiene una seconda copia ottimizzata dei pesi: embedding più veloce,
+      circa 450 MB di RAM in più. Lascia disattivo su un Raspberry Pi 4 GB.
   telemetry:
     name: Telemetria Anonima
     description: >-
@@ -18,9 +33,10 @@ configuration:
   kiro_api_key:
     name: Kiro API Key
     description: >-
-      API key da app.kiro.dev (Settings → API Keys). Abilita l'autenticazione
-      headless — non serve il device-code login manuale. Scritta nel file
-      .env di Crew così sia il gateway che gli agenti la usano automaticamente.
+      Metodo consigliato per accedere a Kiro. Genera una chiave (ksk_...) nel
+      tuo account Kiro, vedi https://kiro.dev/docs/cli/enterprise/governance/api-keys/.
+      Salvata solo nel file .env di Crew (permessi 600), mai nei log. Senza
+      chiave, esegui kiro-login --use-device-flow nel container dell'add-on.
   external_url:
     name: URL Esterno
     description: >-

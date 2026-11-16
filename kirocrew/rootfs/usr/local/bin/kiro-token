@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Mint a dashboard login link on demand. The link is printed to this terminal
+# only, never to the add-on log. Usage: kiro-token [TTL], default 24h.
+set -euo pipefail
+export HOME=/data/home
+ttl="${1:-24h}"
+if [ "$(id -u)" -eq 0 ]; then
+    exec setpriv --reuid=kirocrew --regid=kirocrew --init-groups -- kirocrew token --ttl "${ttl}"
+fi
+exec kirocrew token --ttl "${ttl}"
