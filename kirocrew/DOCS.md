@@ -23,14 +23,23 @@ multi-session work. The dashboard is served on port 5476.
 
 1. Install the addon and start it. The first start downloads the embedding
    model (about 610 MB) in the background.
-2. **Sign in to Kiro CLI.** Agents cannot work until you do. Open a shell in
-   the addon container (SSH/Terminal addon with protection mode off):
+2. **Sign in to Kiro with an API key (recommended).** Generate a key
+   (`ksk_...`) in your Kiro account, as described in
+   [Kiro API keys](https://kiro.dev/docs/cli/enterprise/governance/api-keys/),
+   paste it into the **Kiro API Key** option and restart the addon. The log
+   then shows `Kiro sign-in: API key`. The key is stored only in
+   `/data/home/.kiro/crew/.env` (mode 600) and is never written to the log.
+
+   **No API key?** Sign in with the device flow instead. Open a shell in the
+   addon container (SSH/Terminal addon with protection mode off):
    ```bash
    docker exec -it $(docker ps --filter "label=io.hass.name=Kiro Crew" -q) kiro-login --use-device-flow
    ```
-   Open the printed URL, enter the code and sign in. Alternatively, set the
-   **Kiro API Key** option for headless sign-in.
-3. **Get a dashboard login link:**
+   Open the printed URL, enter the code and sign in. After a restart the log
+   shows `Kiro sign-in: kiro-cli login`. If neither is set up, the log shows
+   a warning and agents cannot run.
+3. **Get a dashboard login link.** This is separate from signing in to Kiro:
+   it lets your browser into the Kiro Crew dashboard.
    ```bash
    docker exec -it $(docker ps --filter "label=io.hass.name=Kiro Crew" -q) kiro-token
    ```
@@ -56,7 +65,7 @@ you change in the dashboard are kept.
 | `embedding_weight_repack` | `false` | `memory.embedding_weight_repack` | Faster embedding at the cost of about 450 MB more RAM while the model is loaded. |
 | `telemetry` | `false` | `telemetry.beacon_enabled` | Anonymous daily heartbeat to the Kiro Crew maintainers. |
 | `log_level` | `info` | `agent.log_level` | Gateway log verbosity. |
-| `kiro_api_key` | | `.env` `KIRO_API_KEY` | Headless sign-in instead of `kiro-login`. |
+| `kiro_api_key` | | `.env` `KIRO_API_KEY` | Recommended Kiro sign-in (`ksk_...` key). Without it, use `kiro-login`. |
 | `external_url` | | `dashboard.url` | Public URL (Cloudflared). Empty: Home Assistant's own external URL. |
 | `telegram_*`, `discord_*`, `slack_*` | | channel sections and `.env` | Chat integrations. |
 
@@ -131,11 +140,11 @@ under a sub-path, so the dashboard is exposed on port 5476 instead.
 
 ## Troubleshooting
 
-### "kiro-cli is not logged in"
+### "Kiro is not signed in" / "kiro-cli is not logged in"
 
-Run `kiro-login` as shown in [First-run setup](#first-run-setup). A login
-made with `kiro-cli login` as root is stored in the wrong place and is not
-seen by the gateway.
+Set the **Kiro API Key** option and restart, or run `kiro-login` as shown in
+[First-run setup](#first-run-setup). A login made with `kiro-cli login` as
+root is stored in the wrong place and is not seen by the gateway.
 
 ### Warnings at startup (normal)
 

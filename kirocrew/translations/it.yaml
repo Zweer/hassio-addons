@@ -33,9 +33,10 @@ configuration:
   kiro_api_key:
     name: Kiro API Key
     description: >-
-      API key da app.kiro.dev (Settings → API Keys). Abilita l'autenticazione
-      headless — non serve il device-code login manuale. Scritta nel file
-      .env di Crew così sia il gateway che gli agenti la usano automaticamente.
+      Metodo consigliato per accedere a Kiro. Genera una chiave (ksk_...) nel
+      tuo account Kiro, vedi https://kiro.dev/docs/cli/enterprise/governance/api-keys/.
+      Salvata solo nel file .env di Crew (permessi 600), mai nei log. Senza
+      chiave, esegui kiro-login --use-device-flow nel container dell'add-on.
   external_url:
     name: URL Esterno
     description: >-
