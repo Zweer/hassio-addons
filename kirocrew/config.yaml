@@ -1,5 +1,5 @@
 name: Kiro Crew
-version: 0.2.14
+version: 0.3.0
 slug: kirocrew
 description: >-
   Persistent AI development workspace that self-improves and continues beyond
@@ -11,16 +11,12 @@ arch:
   - amd64
 startup: application
 boot: auto
-# The image brings its own init (tini, exec'd by the upstream entrypoint).
 init: false
-# The dashboard SPA does not work under the ingress sub-path, so it is
-# exposed on its own port; external access goes through the Cloudflared add-on.
 ports:
   5476/tcp: 5476
 ports_description:
   5476/tcp: Kiro Crew dashboard
 webui: http://[HOST]:[PORT:5476]
-# Reads Home Assistant's external_url when the external_url option is empty.
 homeassistant_api: true
 map:
   - type: share

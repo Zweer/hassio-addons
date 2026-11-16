@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.0](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.14...kirocrew-v0.3.0) (2026-11-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **kirocrew:** session_pool_size is removed, the dashboard moves from ingress to port 5476, and data moves from /data/dot-kiro to /data/home/.kiro (migrated automatically on first start).
+
+### Features
+
+* **kirocrew:** log the Kiro sign-in method at startup ([0f4d955](https://github.com/Zweer/hassio-addons/commit/0f4d9551f045d435ecd2fb68fc124a39d2a26721))
+* **kirocrew:** rework runtime user, options and image pinning ([365d330](https://github.com/Zweer/hassio-addons/commit/365d3302cf8093a600bdd84ac54db370a7cfff50))
+
+
+### Bug Fixes
+
+* **kirocrew:** keep config.json owned by kirocrew after applying options ([01491bb](https://github.com/Zweer/hassio-addons/commit/01491bb5eaaa8af31937c5bb8421e16b722f8166))
+
 ## [0.2.14](https://github.com/Zweer/hassio-addons/compare/kirocrew-v0.2.13...kirocrew-v0.2.14) (2026-08-25)
 
 
