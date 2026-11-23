@@ -3,7 +3,7 @@
 # FROM lines (docker ecosystem on /kirocrew).
 FROM node:26.13.1-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS node
 
-FROM ghcr.io/kirodotdev/kirocrew:0.12.2@sha256:e5c09209758348ec658c45a06853d4faa3b19fb93c0699ab8eca9c39e32d569e
+FROM ghcr.io/kirodotdev/kirocrew:0.13.1@sha256:080c81417fd67d03ca28fdd983cb309efbcea8ee618adaeeb75a2ed96bcf58d1
 
 # Labels required by Home Assistant Supervisor
 ARG BUILD_VERSION
